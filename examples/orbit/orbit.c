@@ -50,7 +50,7 @@ void smooth_set_motors(uint8_t ccw, uint8_t cw)
   set_motors(ccw, cw);
 }
 
-
+// 前後左右の動きを呼び出しやすいように定義した
 void set_motion(motion_t new_motion)
 {
   switch(new_motion) {
@@ -69,7 +69,8 @@ void set_motion(motion_t new_motion)
   }
 }
 
-void orbit_normal()
+// 軌道運動が正常のときに使用する関数
+void orbit_normal() 
 {
   if (mydata->cur_distance < TOOCLOSE_DISTANCE) {
         mydata->orbit_state = ORBIT_TOOCLOSE;
@@ -80,7 +81,7 @@ void orbit_normal()
             set_motion(RIGHT);
     }
 }
-
+// 起動運動時に中心となるロボットに自分が近すぎると離れるように動く
 void orbit_tooclose() {
   if (mydata->cur_distance >= DESIRED_DISTANCE)
     mydata->orbit_state = ORBIT_NORMAL;
@@ -88,16 +89,19 @@ void orbit_tooclose() {
     set_motion(FORWARD);
 }
 
-
+// この関数は何度も実行される
 void loop() {
     // Update distance estimate with every message
-    if (mydata->new_message) {
+    if (mydata->new_message) {// messageを受信するまで0なのでmessageを受信したときと解釈ができる
         mydata->new_message = 0;
-        mydata->cur_distance = estimate_distance(&mydata->dist);
+        mydata->cur_distance = estimate_distance(&mydata->dist);//uint8型に変換してる
+
+	//メッセージを一度でも受け取ると下記のif文には入らない
     } else if (mydata->cur_distance == 0) // skip state machine if no distance measurement available
         return;
 
     // bot 0 is stationary. Other bots orbit around it.
+	// 止まってるロボットは何もしない
     if (kilo_uid == 0)
       return;
     
@@ -112,6 +116,9 @@ void loop() {
     }
 }
 
+// メッセージを受信したら何をするかを定義する関数
+// message_t･･･送られてきたメッセージの内容
+// distance_measurement_t･･･送信者との距離
 void message_rx(message_t *m, distance_measurement_t *d) {
     mydata->new_message = 1;
     mydata->dist = *d;
@@ -125,12 +132,13 @@ void setup_message(void)
   //finally, calculate a message check sum
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
 }
-
+//メッセージを送信しようとしたときに呼び出される関数
 message_t *message_tx() 
 {
   return &mydata->transmit_msg;
 }
 
+//初期設定. 一度だけ実行される
 void setup()
 {
   mydata->orbit_state = ORBIT_NORMAL;
@@ -146,7 +154,7 @@ void setup()
 }
 
 
-#ifdef SIMULATOR
+#ifdef SIMULATOR // シミュレータ上に情報を表示させるときに使用する
 /* provide a text string for the simulator status bar about this bot */
 static char botinfo_buffer[10000];
 char *cb_botinfo(void)
@@ -164,14 +172,16 @@ char *cb_botinfo(void)
 
 
 int main() {
-    kilo_init();
-    kilo_message_rx = message_rx;
+    kilo_init(); //ハードウェアでkilobotを動かすときに使用する
+    kilo_message_rx = message_rx; //メッセージを受信したときに実行されるCallBack関数
 
+	// カーソルでフォーカスしているロボット(bot)の情報をシミュレーターに表示させる
+	// manual.mdの75行目
     SET_CALLBACK(botinfo, cb_botinfo);
     
     // bot 0 is stationary and transmits messages. Other bots orbit around it.
     if (kilo_uid == 0)
-      kilo_message_tx = message_tx;
+      kilo_message_tx = message_tx; // メッセージを送信しようとした時に実行されるCallBack関数
     
     kilo_start(setup, loop);
 

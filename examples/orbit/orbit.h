@@ -22,12 +22,12 @@ typedef enum {
 
 typedef struct 
 {
-  orbit_state_t orbit_state;
+  orbit_state_t orbit_state; // self declare
   uint8_t cur_distance;
   uint8_t new_message;
-  distance_measurement_t dist;
+  distance_measurement_t dist; // kilolib.h 
 
-  message_t transmit_msg;
+  message_t transmit_msg; // kilolib.h
 } USERDATA;
 
 
