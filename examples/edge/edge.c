@@ -112,7 +112,7 @@ void process_message()
   for (i = 0; i < mydata->N_Neighbors; i++)
     if (mydata->neighbors[i].ID == ID)
       {// found it
-    	break;
+        break;
       }
 
   if (i == mydata->N_Neighbors){  // this neighbor is not in list
@@ -140,11 +140,11 @@ void purgeNeighbors(void)
     // 現在の時刻から2s以上古い情報なら削除
     if (kilo_ticks - mydata->neighbors[i].timestamp  > 64) //32 ticks = 1 s
       { //this one is too old.
-	  // 古いnightborの要素数のところに、一番新しく追加されたneihborの情報を上書きする。
-	mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors-1];
-	//replace it by the last entry
-	// 一番新しく追加されたneighborの情報は、コピーされたのでoriginalの方を削除
-	mydata->N_Neighbors--;
+      // 古いnightborの要素数のところに、一番新しく追加されたneihborの情報を上書きする。
+    mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors-1];
+    //replace it by the last entry
+    // 一番新しく追加されたneighborの情報は、コピーされたのでoriginalの方を削除
+    mydata->N_Neighbors--;
       }
 }
 
@@ -182,7 +182,7 @@ void receive_inputs()
   while (!RB_empty())
     {
       process_message();
-	  // messageを処理したので使用済みのメッセージを削除
+      // messageを処理したので使用済みのメッセージを削除
       RB_popfront();
     }
   // 2s以上前に把握したneighborロボットの情報を削除
@@ -197,10 +197,10 @@ uint8_t get_dist_by_ID(uint16_t bot)
   for(i = 0; i < mydata->N_Neighbors; i++)
     {
       if(mydata->neighbors[i].ID == bot)
-	{
-	  dist = mydata->neighbors[i].dist;
-	  break;
-	}
+    {
+      dist = mydata->neighbors[i].dist;
+      break;
+    }
     }
   return dist;
 }
@@ -213,9 +213,9 @@ uint8_t find_nearest_N_dist()
   for(i = 0; i < mydata->N_Neighbors; i++)
     {
       if(mydata->neighbors[i].dist < dist)
-	{
-	  dist = mydata->neighbors[i].dist;
-	}
+    {
+      dist = mydata->neighbors[i].dist;
+    }
     }
   return dist;
 }
@@ -226,7 +226,7 @@ void follow_edge()
   if(find_nearest_N_dist() > desired_dist)
     {
       if(get_move_type() == LEFT)
-	spinup_motors();
+      spinup_motors();
       set_motors(0, kilo_turn_right);
       set_move_type(RIGHT);
     }
@@ -235,23 +235,112 @@ void follow_edge()
   else
     {
       if(get_move_type() == RIGHT)
-	spinup_motors();
+    spinup_motors();
       set_motors(kilo_turn_left, 0);
       set_move_type(LEFT);
     }
 }
+void red_behavior()
+{
+    //メッセージの発信のみ
+    //誰かとメッセージを受信するまで、alone message
+    // 誰かのメッセージを受信できたら　recuruit message
+    setup_message();
+}
+
+void blue_behavior()
+{
+    // aloneメッセージを受信するととまる。
+    // とまるとrecuruit messageを発信
+    //   spinup_motors();
+    //   set_motors(kilo_turn_left, 0);
+    //   set_move_type(LEFT);
+    setup_message();
+
+
+}
+uint8_t stop_flag()
+{
+  if(stopstart == 1)
+  return 1;
+  uint8_t i;
+  uint8_t arr[2];
+  arr[0] = 100;
+  arr[1] = 100;
+
+  if(mydata->N_Neighbors == 2){
+      
+  }
+    printf("======================\n");
+  for(i = 0; i < mydata->N_Neighbors; i++)
+
+    {
+      arr[mydata->neighbors[i].ID] = mydata->neighbors[i].dist;
+    printf("ID : %d, dist : %d\n", mydata->neighbors[i].ID, mydata->neighbors[i].dist);
+    }
+
+    printf(" diff : %d\n",abs( arr[0] - 2 * arr[1]));
+    if(abs(arr[0] - 2 * arr[1]) == 0){
+        stopstart = 1;
+        return 1;
+    }
+
+    printf("======================\n");
+  return 0;
+}
+
+void yellow_behavior()
+{
+  uint8_t desired_dist = 40;
+  uint8_t xxx = stop_flag();
+  if(stopstart!=1){
+  if(find_nearest_N_dist() > desired_dist)
+    {
+      if(get_move_type() == LEFT)
+      spinup_motors();
+      set_motors(0, kilo_turn_right);
+      set_move_type(RIGHT);
+    }
+
+  //if(find_nearest_N_dist() < desired_dist)
+  else
+    {
+      if(get_move_type() == RIGHT)
+    spinup_motors();
+      set_motors(kilo_turn_left, 0);
+      set_move_type(LEFT);
+    }
+  }else{
+      set_motors(0, 0);
+      set_move_type(STOP);
+
+  }
+   
+
+}
+
 
 void loop()
 {
   //receive messages
   receive_inputs();
-  if(kilo_uid == 0)
+  if(kilo_uid == 0) // RED
     {
       set_color(RGB(3,0,0));
-      follow_edge();
+    //   follow_edge();
+      red_behavior();
     }
+  if(kilo_uid == 1) // BLUE
+  {
+      set_color(RGB(0,0,3));
+      blue_behavior();
+  }
+  if(kilo_uid == 2) // YELLOW
+  {
+      set_color(RGB(3,3,0));
+      yellow_behavior();
+  }
   
-  setup_message();
 }
 
 extern char* (*callback_botinfo) (void);

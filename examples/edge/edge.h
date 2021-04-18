@@ -40,7 +40,7 @@ typedef struct {
     distance_measurement_t dist;
 } received_message_t;
 
-
+uint8_t stopstart = 2;
 
 // Ring buffer operations. Taken from kilolib's ringbuffer.h
 // but adapted for use with mydata->
