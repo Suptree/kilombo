@@ -25,13 +25,13 @@ enum BOTTYPE {LAST, FOLLOWER, LEADER};
 enum BOTSTATES {WAIT, LISTEN, MOVE};
 
 typedef struct {
-  uint16_t ID;
-  uint8_t dist;
+  uint16_t ID; // unique id
+  uint8_t dist;// ロボット間の距離
 //  int delta_dist;
 
-  uint8_t n_bot_state;
-  uint8_t N_Neighbors;
-  uint32_t timestamp;
+  uint8_t n_bot_state; // そのロボットの状態
+  uint8_t N_Neighbors; // 近くにいるロボットの数
+  uint32_t timestamp; // Neighorが作成された時間
 
 } Neighbor_t;
 
@@ -40,7 +40,7 @@ typedef struct {
     distance_measurement_t dist;
 } received_message_t;
 
-
+uint8_t stopstart = 2;
 
 // Ring buffer operations. Taken from kilolib's ringbuffer.h
 // but adapted for use with mydata->
@@ -53,13 +53,14 @@ typedef struct {
 //   * head and tail indices are uint8_t, which can be updated atomically
 //     - still, the updates need to be atomic, especially in RB_popfront()
 
+// RXHead は一番古い情報の要素数
+// RXTail はpushbackするときに値を入れる要素数.
 #define RB_init() {	\
     mydata->RXHead = 0; \
     mydata->RXTail = 0;\
 }
 
 #define RB_empty() (mydata->RXHead == mydata->RXTail)
-
 #define RB_full()  ((mydata->RXHead+1)%RB_SIZE == mydata->RXTail)
 
 #define RB_front() mydata->RXBuffer[mydata->RXHead]
@@ -79,6 +80,7 @@ typedef struct {
 /*
 // Ring buffer operations indexed with head, count
 // These save one entry in the buffer, but are less interrupt safe due to the shared count
+
 #define RB_init() {	\
     mydata->RXHead = 0; \
     mydata->RXCount = 0;\
@@ -91,6 +93,7 @@ typedef struct {
     mydata->RXHead = (mydata->RXHead+1)%RB_SIZE;\
     mydata->RXCount--;\
 }
+
 #define RB_pushback() {\
     if (RB_full())\
         mydata->RXHead = (mydata->RXHead+1)%RB_SIZE;\

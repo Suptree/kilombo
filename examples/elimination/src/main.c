@@ -23,7 +23,8 @@ typedef struct
   uint8_t move_type;
   uint8_t bhv_state;
   uint8_t selfgradient;
-  uint8_t selfchainid;
+  uint8_t maxgradient;
+  uint8_t selfchainidmaxgradient;
 
   message_t transmit_msg;
   char message_lock;

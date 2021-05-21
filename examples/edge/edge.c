@@ -10,24 +10,25 @@
 #include "edge.h"
 
 enum {STOP,LEFT,RIGHT,STRAIGHT};
+
 typedef struct
 {
-  Neighbor_t neighbors[MAXN];//近所のロボットの情報を格納しておく配列
+  Neighbor_t neighbors[MAXN];
 
   int N_Neighbors;
-  uint8_t bot_type;// LAST FLLOWER LEADER
-  uint8_t bot_state;// WAIT LISTEN MOVE
-  uint8_t move_type;// STOP LEFT RIGHT STRAIGHT
+  uint8_t bot_type;
+  uint8_t bot_state;
+  uint8_t move_type;
 
-  message_t transmit_msg;//送信するメッセージ
-  char message_lock; // 0 or 1.  0のときはメッセージを送信できる
+  message_t transmit_msg;
+  char message_lock;
 
-  received_message_t RXBuffer[RB_SIZE]; //受け取ったメッセージを循環キューで保存
-  uint8_t RXHead, RXTail; // ring bufferの先頭と最後尾の要素数を表している.
+  received_message_t RXBuffer[RB_SIZE];
+  uint8_t RXHead, RXTail;
 
 } MyUserdata;
 
-REGISTER_USERDATA(MyUserdata) // MyUserdataをmydataとして扱えるように登録する
+REGISTER_USERDATA(MyUserdata)
 
 #ifdef SIMULATOR
 #include <stdio.h>    // for printf
@@ -53,20 +54,16 @@ uint8_t colorNum[] = {
 
 // message rx callback function. Pushes message to ring buffer.
 void rxbuffer_push(message_t *msg, distance_measurement_t *dist) {
-    received_message_t *rmsg = &RB_back(); // ring bufferのtailの場所のポインタをrmsgに渡す
-    rmsg->msg = *msg; // ring bufferのtailの要素数にmsgの情報を格納
-    rmsg->dist = *dist; // ring buffer のtail の要素数にdistの情報を格納
-    RB_pushback(); // tailに情報を格納したので, tailの位置を更新.
+    received_message_t *rmsg = &RB_back();
+    rmsg->msg = *msg;
+    rmsg->dist = *dist;
+    RB_pushback();
 }
 
-// messsage を送信するときにu実行される関数
 message_t *message_tx()
 {
-  // messageを送れないように設定されてるときは、メッセージを送信しない
-  if (mydata->message_lock){
+  if (mydata->message_lock)
     return 0;
-  }
-  //送信するメッセージをreturn する
   return &mydata->transmit_msg;
 }
 
@@ -95,24 +92,21 @@ int get_move_type(void)
  * already in the list, update the information, otherwise
  * add a new entry in the list
  */
-// メッセージ受信バッファにメッセージがあれば実行される関数
+
 void process_message()
 {
   uint8_t i;
   uint16_t ID;
-  //ring bufferの中に存在するメッセージの中で一番古いメッセージを取得
+
   uint8_t *data = RB_front().msg.data;
-  ID = data[0] | (data[1] << 8); // messageからそのロボットのIDを取得
-  uint8_t d = estimate_distance(&RB_front().dist); // messageaからそのロボットの距離を取得
+  ID = data[0] | (data[1] << 8);
+  uint8_t d = estimate_distance(&RB_front().dist);
 
   // search the neighbor list by ID
-  //messageを送ってきたロボットが常にNeighbors Listに存在するか確認する。
-  // 存在するなら i が存在するロボットのneighbors listに格納されてる要素数になる
-  // 見つからなかったら i がN_Neighborsの値になる.
   for (i = 0; i < mydata->N_Neighbors; i++)
     if (mydata->neighbors[i].ID == ID)
       {// found it
-        break;
+    	break;
       }
 
   if (i == mydata->N_Neighbors){  // this neighbor is not in list
@@ -136,21 +130,17 @@ void purgeNeighbors(void)
 {
   int8_t i;
 
-  for (i = mydata->N_Neighbors-1; i >= 0; i--)// 自身が保有している近くのロボットの情報すべてを調べる
-    // 現在の時刻から2s以上古い情報なら削除
+  for (i = mydata->N_Neighbors-1; i >= 0; i--)
     if (kilo_ticks - mydata->neighbors[i].timestamp  > 64) //32 ticks = 1 s
       { //this one is too old.
-      // 古いnightborの要素数のところに、一番新しく追加されたneihborの情報を上書きする。
-    mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors-1];
-    //replace it by the last entry
-    // 一番新しく追加されたneighborの情報は、コピーされたのでoriginalの方を削除
-    mydata->N_Neighbors--;
+	mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors-1];
+	//replace it by the last entry
+	mydata->N_Neighbors--;
       }
 }
 
 void setup_message(void)
 {
-  // 送信するメッセージを構築している あいだは、メッセージを送信しない。
   mydata->message_lock = 1;  //don't transmit while we are forming the message
   mydata->transmit_msg.type = NORMAL;
   mydata->transmit_msg.data[0] = kilo_uid & 0xff;     // 0 low  ID
@@ -159,16 +149,15 @@ void setup_message(void)
   mydata->transmit_msg.data[3] = get_bot_state();     // 3 bot state
 
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
-  // 送信するメッセージが準備できたのでiメッセーzを送信できるようにする
   mydata->message_lock = 0;
 }
 
 void setup()
 {
   rand_seed(kilo_uid + 1); //seed the random number generator
-  // メッセージを送信できるようにする 
+  
   mydata->message_lock = 0;
-  // 近くにいるロボットの数を0に初期化a
+
   mydata->N_Neighbors = 0;
   set_move_type(STOP);
   set_bot_state(LISTEN);
@@ -178,14 +167,11 @@ void setup()
 
 void receive_inputs()
 {
-  // messageがring bnufferに入っている限り、process_message()を実行する
   while (!RB_empty())
     {
       process_message();
-      // messageを処理したので使用済みのメッセージを削除
       RB_popfront();
     }
-  // 2s以上前に把握したneighborロボットの情報を削除
   purgeNeighbors();
 }
 
@@ -197,10 +183,10 @@ uint8_t get_dist_by_ID(uint16_t bot)
   for(i = 0; i < mydata->N_Neighbors; i++)
     {
       if(mydata->neighbors[i].ID == bot)
-    {
-      dist = mydata->neighbors[i].dist;
-      break;
-    }
+	{
+	  dist = mydata->neighbors[i].dist;
+	  break;
+	}
     }
   return dist;
 }
@@ -213,9 +199,9 @@ uint8_t find_nearest_N_dist()
   for(i = 0; i < mydata->N_Neighbors; i++)
     {
       if(mydata->neighbors[i].dist < dist)
-    {
-      dist = mydata->neighbors[i].dist;
-    }
+	{
+	  dist = mydata->neighbors[i].dist;
+	}
     }
   return dist;
 }
@@ -226,7 +212,7 @@ void follow_edge()
   if(find_nearest_N_dist() > desired_dist)
     {
       if(get_move_type() == LEFT)
-      spinup_motors();
+	spinup_motors();
       set_motors(0, kilo_turn_right);
       set_move_type(RIGHT);
     }
@@ -235,112 +221,23 @@ void follow_edge()
   else
     {
       if(get_move_type() == RIGHT)
-    spinup_motors();
+	spinup_motors();
       set_motors(kilo_turn_left, 0);
       set_move_type(LEFT);
     }
 }
-void red_behavior()
-{
-    //メッセージの発信のみ
-    //誰かとメッセージを受信するまで、alone message
-    // 誰かのメッセージを受信できたら　recuruit message
-    setup_message();
-}
-
-void blue_behavior()
-{
-    // aloneメッセージを受信するととまる。
-    // とまるとrecuruit messageを発信
-    //   spinup_motors();
-    //   set_motors(kilo_turn_left, 0);
-    //   set_move_type(LEFT);
-    setup_message();
-
-
-}
-uint8_t stop_flag()
-{
-  if(stopstart == 1)
-  return 1;
-  uint8_t i;
-  uint8_t arr[2];
-  arr[0] = 100;
-  arr[1] = 100;
-
-  if(mydata->N_Neighbors == 2){
-      
-  }
-    printf("======================\n");
-  for(i = 0; i < mydata->N_Neighbors; i++)
-
-    {
-      arr[mydata->neighbors[i].ID] = mydata->neighbors[i].dist;
-    printf("ID : %d, dist : %d\n", mydata->neighbors[i].ID, mydata->neighbors[i].dist);
-    }
-
-    printf(" diff : %d\n",abs( arr[0] - 2 * arr[1]));
-    if(abs(arr[0] - 2 * arr[1]) == 0){
-        stopstart = 1;
-        return 1;
-    }
-
-    printf("======================\n");
-  return 0;
-}
-
-void yellow_behavior()
-{
-  uint8_t desired_dist = 40;
-  uint8_t xxx = stop_flag();
-  if(stopstart!=1){
-  if(find_nearest_N_dist() > desired_dist)
-    {
-      if(get_move_type() == LEFT)
-      spinup_motors();
-      set_motors(0, kilo_turn_right);
-      set_move_type(RIGHT);
-    }
-
-  //if(find_nearest_N_dist() < desired_dist)
-  else
-    {
-      if(get_move_type() == RIGHT)
-    spinup_motors();
-      set_motors(kilo_turn_left, 0);
-      set_move_type(LEFT);
-    }
-  }else{
-      set_motors(0, 0);
-      set_move_type(STOP);
-
-  }
-   
-
-}
-
 
 void loop()
 {
   //receive messages
   receive_inputs();
-  if(kilo_uid == 0) // RED
+  if(kilo_uid == 0)
     {
       set_color(RGB(3,0,0));
-    //   follow_edge();
-      red_behavior();
+      follow_edge();
     }
-  if(kilo_uid == 1) // BLUE
-  {
-      set_color(RGB(0,0,3));
-      blue_behavior();
-  }
-  if(kilo_uid == 2) // YELLOW
-  {
-      set_color(RGB(3,3,0));
-      yellow_behavior();
-  }
   
+  setup_message();
 }
 
 extern char* (*callback_botinfo) (void);
@@ -348,7 +245,6 @@ char *botinfo(void);
 
 int main(void)
 {
-
   kilo_init();
 
 #ifdef DEBUG
@@ -381,8 +277,6 @@ char *botinfo(void)
   n = sprintf (p, "Ns: %d, dist: %d\n ", mydata->N_Neighbors, find_nearest_N_dist());
   p += n;
 
-  n = sprintf (p, "RXHead: %d, RXTail: %d\n ",mydata->RXHead,mydata->RXTail);
-  p += n;
   return botinfo_buffer;
 }
 #endif
