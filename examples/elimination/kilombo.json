@@ -6,7 +6,7 @@
     "timeStep" : 0.0416666,
     "simulationTime" : 0,
     "commsRadius" : 100,
-    "showCommsRadius" : 1,
+    "showCommsRadius" : 0,
     "showComms" : 1,
     "distributePercent" : 0.9,
     "displayWidth"  : 800,

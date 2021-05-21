@@ -227,6 +227,17 @@ int find_nest() // 近くにnestがいたら1、いなかったら０を返す
     }
   return 0;
 }
+
+uint8_t find_node_num()
+{
+	uint8_t i;
+	uint8_t node_num = 0;
+	for(i = 0; i < mydata->N_Neighbors; i++)
+	{
+		if(mydata->neighbors[i].bhv_state == NODE ) node_num++;
+	}
+	return node_num;
+}
 uint8_t find_nearest_N_dist()
 {
   uint8_t i;
@@ -268,21 +279,40 @@ void robot_node_behavior(){
 }
 
 void robot_explorer_behavior(){
-	if(kilo_ticks < 160){
-		if(find_nest()){
-			set_bhv_state(NODE);
-			return;
-		}	
-
-	}
 	set_color(RGB(0,0,3));
-	follow_edge();
-	// printf("time : %d\n",kilo_ticks);
 
-	if(find_node()){
-		set_bhv_state(NODE);
+	if(kilo_ticks % 1000 !=( kilo_uid * 50 ) ){
 		return;
 	}
+
+
+	// if(kilo_ticks < 160){
+	// 	if(find_nest()){
+	// 		set_bhv_state(NODE);
+	// 		return;
+	// 	}	
+
+	// }
+	// set_color(RGB(0,0,3));
+	// follow_edge();
+	// // printf("time : %d\n",kilo_ticks);
+
+	// if(find_node()){
+	// 	set_bhv_state(NODE);
+	// 	return;
+	// }
+	// if(kilo_uid == 5)
+	// printf("kilo_tick : %d\nfind_node_num : %d\n", kilo_ticks,find_node_num());
+
+	if(  (!find_nest() && find_node_num() == 1) || (find_nest() && find_node_num() == 0))
+	{
+	// if(kilo_uid == 5)
+	// printf("true\n");
+		set_bhv_state(NODE);		
+		return;	
+	}
+
+	follow_edge();
 
 	
 
