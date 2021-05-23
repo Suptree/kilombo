@@ -101,7 +101,7 @@ typedef struct {
 
 
 
-enum BEHAVIORSTATES {NODE, EXPLORER, LOSTCHAIN};
+enum BEHAVIORSTATES {NODE, EXPLORER, LOSTCHAIN, DETECT};
 
 void robot_explorer_behavior();
 

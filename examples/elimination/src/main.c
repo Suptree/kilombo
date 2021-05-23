@@ -228,6 +228,17 @@ int find_nest() // 近くにnestがいたら1、いなかったら０を返す
   return 0;
 }
 
+int find_food()
+{
+
+  uint8_t i;
+  for(i = 0; i < mydata->N_Neighbors; i++)
+    {
+      if(mydata->neighbors[i].ID == 1) return 1;
+    }
+  return 0;
+}
+
 uint8_t find_node_num()
 {
 	uint8_t i;
@@ -273,7 +284,13 @@ void follow_edge()
     }
 }
 void robot_node_behavior(){
+	if(mydata->bhv_state == DETECT){
+		set_color(RGB(0,3,3));
+	}else{
+
 	set_color(RGB(3,3,3));
+	}
+
 	set_motors(0, 0);
 	set_move_type(STOP);
 }
@@ -303,6 +320,10 @@ void robot_explorer_behavior(){
 	// }
 	// if(kilo_uid == 5)
 	// printf("kilo_tick : %d\nfind_node_num : %d\n", kilo_ticks,find_node_num());
+	if(find_food()){
+		set_bhv_state(DETECT);
+		return;
+	}
 
 	if(  (!find_nest() && find_node_num() == 1) || (find_nest() && find_node_num() == 0))
 	{
@@ -337,7 +358,7 @@ void loop()
   {
 	  if(mydata->bhv_state == EXPLORER){
 		robot_explorer_behavior();  
-	  }else if(mydata->bhv_state == NODE){
+	  }else if(mydata->bhv_state == NODE || mydata->bhv_state == DETECT){
 		  robot_node_behavior();
 	  }else if(mydata->bhv_state == LOSTCHAIN){
 		  
