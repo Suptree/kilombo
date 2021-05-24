@@ -23,6 +23,20 @@ extern uint8_t NGenes;
 enum BOTTYPE {LAST, FOLLOWER, LEADER};
 enum BOTSTATES {WAIT, LISTEN, MOVE};
 
+// declare motion variable type
+typedef enum {
+    STOP,
+    FORWARD,
+    LEFT,
+    RIGHT
+} motion_t;
+
+// declare state variable type
+typedef enum {
+    ORBIT_TOOCLOSE,
+    ORBIT_NORMAL,
+} orbit_state_t;
+
 typedef struct {
   uint16_t ID;
   uint8_t dist;
