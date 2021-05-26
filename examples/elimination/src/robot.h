@@ -33,9 +33,9 @@ typedef enum {
 
 // declare state variable type
 typedef enum {
-    ORBIT_TOOCLOSE,
-    ORBIT_NORMAL,
-} orbit_state_t;
+    TOOCLOSEDIST,
+    NORMALDIST,
+} dist_state_t;
 
 typedef struct {
   uint16_t ID;

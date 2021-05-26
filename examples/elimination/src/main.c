@@ -22,6 +22,7 @@ typedef struct
   uint8_t bot_state;
   uint8_t move_type;
   uint8_t bhv_state;
+  uint8_t dist_state;
   uint8_t selfgradient;
   uint8_t maxgradient;
   uint8_t selfchainidmaxgradient;
@@ -36,8 +37,8 @@ typedef struct
 
 REGISTER_USERDATA(MyUserdata)
 // declare constants
-static const uint8_t TOOCLOSE_DISTANCE = 40; // 40 mm
-static const uint8_t DESIRED_DISTANCE = 60; // 60 mm
+static const uint8_t TOOCLOSE_DISTANCE = 30; // 40 mm
+static const uint8_t DESIRED_DISTANCE = 50; // 60 mm
 
 #ifdef SIMULATOR
 #include <stdio.h>    // for printf
@@ -65,7 +66,6 @@ void smooth_set_motors(uint8_t ccw, uint8_t cw)
 }
 
 
-enum {STOP,LEFT,RIGHT,STRAIGHT};
 uint8_t colorNum[] = {
   RGB(0,0,0),  //0 - off
   RGB(1,0,0),  //1 - red
@@ -104,6 +104,11 @@ void set_bhv_state(int state)
   mydata->bhv_state = state;
 }
 
+void set_dist_state(int state)
+{
+  mydata->dist_state = state;
+}
+
 int get_bot_state(void)
 {
   return mydata->bot_state;
@@ -111,6 +116,10 @@ int get_bot_state(void)
 int get_bhv_state(void)
 {
 	return mydata->bhv_state;
+}
+int get_dist_state(void)
+{
+	return mydata->dist_state;
 }
 
 void set_move_type(int type)
@@ -158,6 +167,7 @@ void process_message()
   mydata->neighbors[i].N_Neighbors = data[2];
   mydata->neighbors[i].n_bot_state = data[3];
   mydata->neighbors[i].bhv_state = data[4];
+  mydata->neighbors[i].bhv_state = data[5];
 }
 
 /* Go through the list of neighbors, remove entries older than a threshold,
@@ -283,25 +293,58 @@ uint8_t find_nearest_N_dist()
     }
   return dist;
 }
+void orbit_normal() 
+{
+  if (find_nearest_N_dist() < TOOCLOSE_DISTANCE) {
+        mydata->dist_state = TOOCLOSEDIST;
+    } else{
+        if (find_nearest_N_dist() < DESIRED_DISTANCE)
+		{
+            set_motors(kilo_turn_left, 0);
+            set_move_type(LEFT);
+		}else{
+
+	        set_motors(0, kilo_turn_right);
+  		    set_move_type(RIGHT);
+		}
+    }
+}
+
+void orbit_tooclose() {
+  if (find_nearest_N_dist() >= DESIRED_DISTANCE)
+    mydata->dist_state = NORMALDIST;
+  else{
+	  set_motors(kilo_turn_left,kilo_turn_right);
+	  set_move_type(FORWARD);
+  }
+}
 void follow_edge()
 {
   uint8_t desired_dist = 55;
-  if(find_nearest_N_dist() > desired_dist)
-    {
-      if(get_move_type() == LEFT)
-	spinup_motors();
-      set_motors(0, kilo_turn_right);
-      set_move_type(RIGHT);
-    }
+//   if(find_nearest_N_dist() > desired_dist)
+//     {
+//       if(get_move_type() == LEFT)
+// 	spinup_motors();
+//       set_motors(0, kilo_turn_right);
+//       set_move_type(RIGHT);
+//     }
 
-  //if(find_nearest_N_dist() < desired_dist)
-  else
-    {
-      if(get_move_type() == RIGHT)
-	spinup_motors();
-      set_motors(kilo_turn_left, 0);
-      set_move_type(LEFT);
-    }
+//   //if(find_nearest_N_dist() < desired_dist)
+//   else
+//     {
+//       if(get_move_type() == RIGHT)
+// 	spinup_motors();
+//       set_motors(kilo_turn_left, 0);
+//       set_move_type(LEFT);
+//     }
+  if(mydata->dist_state == NORMALDIST){
+	  orbit_normal();
+	  return;
+  }else{
+	  orbit_tooclose();
+	  return;
+  } 
+   
 }
 void robot_node_behavior(){
 	if(mydata->bhv_state == DETECT){
@@ -352,7 +395,6 @@ void robot_explorer_behavior(){
 		set_bhv_state(NODE);		
 		return;	
 	}
-
 	follow_edge();
 
 	
