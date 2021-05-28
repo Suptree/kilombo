@@ -13,7 +13,6 @@ typedef enum {
 } motion_t;
 
 // declare variables
-
 typedef struct 
 {
   uint16_t gradient_value;

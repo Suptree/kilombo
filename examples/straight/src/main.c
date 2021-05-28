@@ -18,14 +18,10 @@ typedef struct
   Neighbor_t neighbors[MAXN];
 
   int N_Neighbors;
-  uint8_t bot_type;
   uint8_t bot_state;
   uint8_t move_type;
   uint8_t bhv_state;
   uint8_t dist_state;
-  uint8_t selfgradient;
-  uint8_t maxgradient;
-  uint8_t selfchainidmaxgradient;
 
   message_t transmit_msg;
   char message_lock;
@@ -320,7 +316,6 @@ void orbit_tooclose() {
 }
 void follow_edge()
 {
-  uint8_t desired_dist = 55;
 //   if(find_nearest_N_dist() > desired_dist)
 //     {
 //       if(get_move_type() == LEFT)
