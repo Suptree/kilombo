@@ -58,6 +58,7 @@ typedef struct {
   uint8_t N_Neighbors;
   uint32_t timestamp;
   uint8_t bhv_state;
+  uint16_t gradient_value;
 
 } Neighbor_t;
 

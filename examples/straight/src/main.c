@@ -22,6 +22,9 @@ typedef struct
   uint8_t move_type;
   uint8_t bhv_state;
   uint8_t dist_state;
+  uint16_t gradient_value;
+  uint16_t recvd_gradient;
+
 
   message_t transmit_msg;
   char message_lock;
@@ -34,7 +37,7 @@ typedef struct
 REGISTER_USERDATA(MyUserdata)
 // declare constants
 static const uint8_t TOOCLOSE_DISTANCE = 30; // 40 mm
-static const uint8_t DESIRED_DISTANCE = 50; // 60 mm
+static const uint8_t DESIRED_DISTANCE = 38; // 60 mm
 
 #ifdef SIMULATOR
 #include <stdio.h>    // for printf
@@ -163,8 +166,9 @@ void process_message()
   mydata->neighbors[i].N_Neighbors = data[2];
   mydata->neighbors[i].n_bot_state = data[3];
   mydata->neighbors[i].bhv_state = data[4];
-  mydata->neighbors[i].bhv_state = data[5];
-}
+  mydata->neighbors[i].gradient_value = data[5];
+
+ }
 
 /* Go through the list of neighbors, remove entries older than a threshold,
  * currently 2 seconds.
@@ -191,6 +195,7 @@ void setup_message(void)
   mydata->transmit_msg.data[2] = mydata->N_Neighbors; // 2 number of neighbors
   mydata->transmit_msg.data[3] = get_bot_state();     // 3 bot state
   mydata->transmit_msg.data[4] = get_bhv_state();
+  mydata->transmit_msg.data[5] = mydata->gradient_value;
 
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
@@ -199,13 +204,20 @@ void setup_message(void)
 void setup()
 {
   rand_seed(kilo_uid + 1); //seed the random number generator
-  
+  mydata->gradient_value = UINT16_MAX;
+  mydata->recvd_gradient = 0;
   mydata->message_lock = 0;
+  if (kilo_uid == 0){
+	  mydata->gradient_value = 0;
+  }
 
   mydata->N_Neighbors = 0;
   set_move_type(STOP);
   set_bot_state(LISTEN);
-  set_bhv_state(EXPLORER);
+  set_bhv_state(NODE);
+  if(kilo_uid == 1){
+	  set_bhv_state(EXPLORER);
+  }
   setup_message();
 }
 
@@ -341,64 +353,74 @@ void follow_edge()
   } 
    
 }
-void robot_node_behavior(){
-	if(mydata->bhv_state == DETECT){
-		set_color(RGB(0,3,3));
-	}else{
 
-	set_color(RGB(3,3,3));
-	}
+void update_gradient(){
+  uint8_t i;
+  uint16_t min_gradient = UINT16_MAX;
+
+  for(i = 0; i < mydata->N_Neighbors; i++)
+  {
+	  if(mydata->neighbors[i].gradient_value == UINT16_MAX) continue;
+
+      if(mydata->neighbors[i].gradient_value < min_gradient)
+  	  {
+	    min_gradient = mydata->neighbors[i].gradient_value;
+  	  }
+  }
+  if(min_gradient == UINT16_MAX) return;
+  mydata->gradient_value = min_gradient + 1;
+  return;
+
+}
+void robot_node_behavior(){
+	update_gradient();
+	set_color(colors[mydata->gradient_value % 10]);
 
 	set_motors(0, 0);
 	set_move_type(STOP);
 }
 
+// int judge_robot_node() {
+//   uint8_t i;
+//   uint8_t j;
+//   uint8_t dist = 90;
+//   uint8_t ids[mydata->N_Neighbors];
+  
+//   for(i = 0; i < mydata->N_Neighbors; i++)
+//   {
+//     for(j = 0; j < mydata->N_Neighbors; j++)
+// 	{
+// 		if ()
+// 	}
+//     if(mydata->neighbors[i].dist < dist)
+// 	{
+// 	  dist = mydata->neighbors[i].dist;
+// 	}
+//   }
+//   return dist;
+// }
+
 void robot_explorer_behavior(){
+
+
 	set_color(RGB(0,0,3));
 	follow_edge();
-	if(kilo_ticks % 110 != ( kilo_uid * 10  ) ){
-		// if(kilo_uid == 3 || kilo_uid == 4 || kilo_uid == 8){
 
-		// }else
-		return;
+
+	if(abs(get_dist_by_ID(2) *2 - get_dist_by_ID(6)) == 0){
+		printf("AAAAAA");
+  set_move_type(STOP);
+  set_bot_state(LISTEN);
+  set_bhv_state(NODE);
+
 	}
+    printf("======================\n");
+    printf("ID : %d, dist : %d\n", 2, get_dist_by_ID(2));
 
-
-	// if(kilo_ticks < 160){
-	// 	if(find_nest()){
-	// 		set_bhv_state(NODE);
-	// 		return;
-	// 	}	
-
-	// }
-	// set_color(RGB(0,0,3));
-	// follow_edge();
-	// // printf("time : %d\n",kilo_ticks);
-
-	// if(find_node()){
-	// 	set_bhv_state(NODE);
-	// 	return;
-	// }
-	// if(kilo_uid == 5)
-	// printf("kilo_tick : %d\nfind_node_num : %d\n", kilo_ticks,find_node_num());
-	if(find_food()){
-		set_bhv_state(DETECT);
-		return;
-	}
-
-	if(  (!find_nest() && find_node_num() == 1) || (find_nest() && find_node_num() == 0))
-	{
-	// if(kilo_uid == 5)
-	// printf("true\n");
-		set_bhv_state(NODE);		
-		return;	
-	}
-	// follow_edge();
-
+    printf("ID : %d, dist : %d\n", 6, get_dist_by_ID(6));
+	printf("ABS %d\n",abs(get_dist_by_ID(2) *2 - get_dist_by_ID(6)));
 	
-
 }
-
 
 void loop()
 {
@@ -409,11 +431,10 @@ void loop()
       set_robot_nest_color();
 	  robot_nest_behavior();
     }
-  else if(kilo_uid == 1) // food
-  {
-	  set_robot_food_color();
-	  robot_food_behavior();
-  }
+//   else if(kilo_uid == 1) // food
+//   {
+// 	  robot_explorer_behavior();
+//   }
   else
   {
 	  if(mydata->bhv_state == EXPLORER){
@@ -464,6 +485,9 @@ char *botinfo(void)
   p += n;
 
   n = sprintf (p, "Ns: %d, dist: %d\n ", mydata->N_Neighbors, find_nearest_N_dist());
+  p += n;
+
+  n = sprintf (p, "gradient values : %d\n ", mydata->gradient_value);
   p += n;
 
   return botinfo_buffer;
