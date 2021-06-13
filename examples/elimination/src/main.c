@@ -359,10 +359,12 @@ void robot_node_behavior(){
 }
 
 void robot_explorer_behavior(){
+
 	set_color(RGB(0,0,3));
-	follow_edge();
 	if(kilo_ticks % 110 != ( kilo_uid * 10  ) ){
 		// if(kilo_uid == 3 || kilo_uid == 4 || kilo_uid == 8){
+	set_motors(0, 0);
+	set_move_type(STOP);
 
 		// }else
 		return;
@@ -398,7 +400,7 @@ void robot_explorer_behavior(){
 		set_bhv_state(NODE);		
 		return;	
 	}
-	// follow_edge();
+	follow_edge();
 
 	
 
