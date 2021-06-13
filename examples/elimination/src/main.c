@@ -12,6 +12,12 @@
 #include "food.h"
 #include "robot.h"
 
+FILE *fp;
+char *fname = "neibors.csv";
+FILE *fpmain;
+char *fnamemain = "self.csv";
+FILE *fptrans;
+char *fnametrans = "message.csv";
 
 typedef struct
 {
@@ -82,6 +88,7 @@ uint8_t colorNum[] = {
 // message rx callback function. Pushes message to ring buffer.
 void rxbuffer_push(message_t *msg, distance_measurement_t *dist) {
     received_message_t *rmsg = &RB_back();
+fprintf(fptrans,"%d,%d,%d\n",kilo_uid,kilo_ticks,msg->data[0]);
     rmsg->msg = *msg;
     rmsg->dist = *dist;
     RB_pushback();
@@ -115,11 +122,11 @@ int get_bot_state(void)
 }
 int get_bhv_state(void)
 {
-	return mydata->bhv_state;
+  return mydata->bhv_state;
 }
 int get_dist_state(void)
 {
-	return mydata->dist_state;
+  return mydata->dist_state;
 }
 
 void set_move_type(int type)
@@ -151,7 +158,7 @@ void process_message()
   for (i = 0; i < mydata->N_Neighbors; i++)
     if (mydata->neighbors[i].ID == ID)
       {// found it
-    	break;
+      break;
       }
 
   if (i == mydata->N_Neighbors){  // this neighbor is not in list
@@ -180,9 +187,9 @@ void purgeNeighbors(void)
   for (i = mydata->N_Neighbors-1; i >= 0; i--)
     if (kilo_ticks - mydata->neighbors[i].timestamp  > 64) //32 ticks = 1 s
       { //this one is too old.
-	mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors-1];
-	//replace it by the last entry
-	mydata->N_Neighbors--;
+  mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors-1];
+  //replace it by the last entry
+  mydata->N_Neighbors--;
       }
 }
 
@@ -203,7 +210,23 @@ void setup_message(void)
 void setup()
 {
   rand_seed(kilo_uid + 1); //seed the random number generator
-  
+  fp = fopen( fname, "w" );
+  if( fp == NULL ){
+    printf( "%sファイルが開けません¥n", fname );
+    return;
+  }
+  fpmain = fopen( fnamemain, "w" );
+  if( fpmain == NULL ){
+    printf( "%sファイルが開けません¥n", fnamemain );
+    return;
+  }
+
+  fptrans = fopen( fnametrans, "w" );
+  if( fptrans == NULL ){
+    printf( "%sファイルが開けません¥n", fnametrans );
+    return;
+  }
+
   mydata->message_lock = 0;
 
   mydata->N_Neighbors = 0;
@@ -231,10 +254,10 @@ uint8_t get_dist_by_ID(uint16_t bot)
   for(i = 0; i < mydata->N_Neighbors; i++)
     {
       if(mydata->neighbors[i].ID == bot)
-	{
-	  dist = mydata->neighbors[i].dist;
-	  break;
-	}
+  {
+    dist = mydata->neighbors[i].dist;
+    break;
+  }
     }
   return dist;
 }
@@ -271,13 +294,13 @@ int find_food()
 
 uint8_t find_node_num()
 {
-	uint8_t i;
-	uint8_t node_num = 0;
-	for(i = 0; i < mydata->N_Neighbors; i++)
-	{
-		if(mydata->neighbors[i].bhv_state == NODE ) node_num++;
-	}
-	return node_num;
+  uint8_t i;
+  uint8_t node_num = 0;
+  for(i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if(mydata->neighbors[i].bhv_state == NODE ) node_num++;
+  }
+  return node_num;
 }
 uint8_t find_nearest_N_dist()
 {
@@ -287,9 +310,9 @@ uint8_t find_nearest_N_dist()
   for(i = 0; i < mydata->N_Neighbors; i++)
     {
       if(mydata->neighbors[i].dist < dist)
-	{
-	  dist = mydata->neighbors[i].dist;
-	}
+  {
+    dist = mydata->neighbors[i].dist;
+  }
     }
   return dist;
 }
@@ -299,14 +322,14 @@ void orbit_normal()
         mydata->dist_state = TOOCLOSEDIST;
     } else{
         if (find_nearest_N_dist() < DESIRED_DISTANCE)
-		{
+    {
             set_motors(kilo_turn_left, 0);
             set_move_type(LEFT);
-		}else{
+    }else{
 
-	        set_motors(0, kilo_turn_right);
-  		    set_move_type(RIGHT);
-		}
+          set_motors(0, kilo_turn_right);
+          set_move_type(RIGHT);
+    }
     }
 }
 
@@ -314,8 +337,8 @@ void orbit_tooclose() {
   if (find_nearest_N_dist() >= DESIRED_DISTANCE)
     mydata->dist_state = NORMALDIST;
   else{
-	  set_motors(kilo_turn_left,kilo_turn_right);
-	  set_move_type(FORWARD);
+    set_motors(kilo_turn_left,kilo_turn_right);
+    set_move_type(FORWARD);
   }
 }
 void follow_edge()
@@ -338,100 +361,106 @@ void follow_edge()
 //       set_move_type(LEFT);
 //     }
   if(mydata->dist_state == NORMALDIST){
-	  orbit_normal();
-	  return;
+    orbit_normal();
+    return;
   }else{
-	  orbit_tooclose();
-	  return;
+    orbit_tooclose();
+    return;
   } 
    
 }
 void robot_node_behavior(){
-	if(mydata->bhv_state == DETECT){
-		set_color(RGB(0,3,3));
-	}else{
+  if(mydata->bhv_state == DETECT){
+    set_color(RGB(0,3,3));
+  }else{
 
-	set_color(RGB(3,3,3));
-	}
+  set_color(RGB(3,3,3));
+  }
 
-	set_motors(0, 0);
-	set_move_type(STOP);
+  set_motors(0, 0);
+  set_move_type(STOP);
 }
 
 void robot_explorer_behavior(){
 
-	set_color(RGB(0,0,3));
-	if(kilo_ticks % 110 != ( kilo_uid * 10  ) ){
-		// if(kilo_uid == 3 || kilo_uid == 4 || kilo_uid == 8){
-	set_motors(0, 0);
-	set_move_type(STOP);
+  set_color(RGB(0,0,3));
+  if(kilo_ticks % 110 != ( kilo_uid * 10  ) ){
+    // if(kilo_uid == 3 || kilo_uid == 4 || kilo_uid == 8){
+  set_motors(0, 0);
+  set_move_type(STOP);
 
-		// }else
-		return;
-	}
+    // }else
+    return;
+  }
 
 
-	// if(kilo_ticks < 160){
-	// 	if(find_nest()){
-	// 		set_bhv_state(NODE);
-	// 		return;
-	// 	}	
+  // if(kilo_ticks < 160){
+  // 	if(find_nest()){
+  // 		set_bhv_state(NODE);
+  // 		return;
+  // 	}	
 
-	// }
-	// set_color(RGB(0,0,3));
-	// follow_edge();
-	// // printf("time : %d\n",kilo_ticks);
+  // }
+  // set_color(RGB(0,0,3));
+  // follow_edge();
+  // // printf("time : %d\n",kilo_ticks);
 
-	// if(find_node()){
-	// 	set_bhv_state(NODE);
-	// 	return;
-	// }
-	// if(kilo_uid == 5)
-	// printf("kilo_tick : %d\nfind_node_num : %d\n", kilo_ticks,find_node_num());
-	if(find_food()){
-		set_bhv_state(DETECT);
-		return;
-	}
+  // if(find_node()){
+  // 	set_bhv_state(NODE);
+  // 	return;
+  // }
+  // if(kilo_uid == 5)
+  // printf("kilo_tick : %d\nfind_node_num : %d\n", kilo_ticks,find_node_num());
+  if(find_food()){
+    set_bhv_state(DETECT);
+    return;
+  }
 
-	if(  (!find_nest() && find_node_num() == 1) || (find_nest() && find_node_num() == 0))
-	{
-	// if(kilo_uid == 5)
-	// printf("true\n");
-		set_bhv_state(NODE);		
-		return;	
-	}
-	follow_edge();
+  if(  (!find_nest() && find_node_num() == 1) || (find_nest() && find_node_num() == 0))
+  {
+  // if(kilo_uid == 5)
+  // printf("true\n");
+    set_bhv_state(NODE);		
+    return;	
+  }
+  follow_edge();
 
-	
+  
 
 }
 
 
 void loop()
 {
+
+  fprintf(fpmain,"%d,%d,%d,%d,%d,%d,%d,%d\n",kilo_uid,kilo_ticks,mydata->bhv_state,mydata->bot_state,mydata->dist_state,mydata->maxgradient,mydata->move_type,mydata->N_Neighbors);
+  int j = 0;
+  for(j = 0; j < mydata->N_Neighbors; j++) {
+    fprintf(fp,"%d,%d,%d,%d,%d\n",kilo_uid,kilo_ticks,mydata->neighbors[j].ID,mydata->neighbors[j].bhv_state,mydata->neighbors[j].dist);
+  }
   //receive messages
   receive_inputs();
   if(kilo_uid == 0) // nest
     {
       set_robot_nest_color();
-	  robot_nest_behavior();
+    robot_nest_behavior();
     }
   else if(kilo_uid == 1) // food
   {
-	  set_robot_food_color();
-	  robot_food_behavior();
+    set_robot_food_color();
+    robot_food_behavior();
   }
   else
   {
-	  if(mydata->bhv_state == EXPLORER){
-		robot_explorer_behavior();  
-	  }else if(mydata->bhv_state == NODE || mydata->bhv_state == DETECT){
-		  robot_node_behavior();
-	  }else if(mydata->bhv_state == LOSTCHAIN){
-		  
-	  }else{
-		  printf("ERROR");
-	  }
+    if(mydata->bhv_state == EXPLORER){
+    robot_explorer_behavior();  
+    }else if(mydata->bhv_state == NODE || mydata->bhv_state == DETECT){
+      robot_node_behavior();
+    }else if(mydata->bhv_state == LOSTCHAIN){
+      
+    }else{
+      printf("ERROR");
+    }
   }
   setup_message();
 }
