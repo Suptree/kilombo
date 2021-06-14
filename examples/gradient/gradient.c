@@ -22,9 +22,16 @@
  */
 
 #include <kilombo.h>
+#include <stdio.h>
 
 #include "gradient.h" // defines the USERDATA structure
 
+FILE *fp;
+char *fname = "message.csv";
+FILE *fpmain;
+char *fnamemain = "main.csv";
+FILE *fptrans;
+char *fnametrans = "trans.csv";
 
 REGISTER_USERDATA(USERDATA)
 
@@ -64,7 +71,10 @@ void message_rx(message_t *m, distance_measurement_t *d) {
 
   // process the received value immediately, to avoid message collisions.
   // at least in the simulator it is possible that two neighbors transmits in the same time slot
+
   // and then one message may be lost.
+  fprintf(fp,"%d,%d\n", kilo_uid, kilo_ticks);
+
   uint16_t recvd_gradient = m->data[0]  | (m->data[1]<<8);
   if (mydata->gradient_value > recvd_gradient+1)
     {
@@ -75,6 +85,8 @@ void message_rx(message_t *m, distance_measurement_t *d) {
 }
 
 message_t *message_tx() {
+
+    fprintf(fptrans,"%d,%d\n", kilo_uid, kilo_ticks);
     if (mydata->gradient_value != UINT16_MAX)
         return &mydata->msg;
     else
@@ -83,6 +95,25 @@ message_t *message_tx() {
 
 
 void setup() {
+  fp = fopen( fname, "w" );
+  if( fp == NULL ){
+    printf( "%sファイルが開けません¥n", fname );
+    return;
+  }
+  fpmain = fopen( fnamemain, "w" );
+  if( fpmain == NULL ){
+    printf( "%sファイルが開けません¥n", fnamemain );
+    return;
+  }
+
+  fptrans = fopen( fnametrans, "w" );
+  if( fptrans == NULL ){
+    printf( "%sファイルが開けません¥n", fnametrans );
+    return;
+  }
+ fprintf(fp,"%s,%s\n","kilo_uid", "kilo_ticks");
+
+
   mydata->gradient_value = UINT16_MAX;
   mydata->recvd_gradient = 0;
   mydata->new_message = 0;
@@ -95,7 +126,9 @@ void setup() {
 }
 
 void loop()
-{
+{ 
+  fprintf(fpmain,"%d,%d\n",kilo_uid,kilo_ticks);
+
   set_color(colors[mydata->gradient_value%10]);
 }
 

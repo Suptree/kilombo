@@ -4,13 +4,17 @@
  */
 
 #include <math.h>
-
+#include <stdio.h>
 #include <kilombo.h>
 
 #include "edge.h"
 
 enum {STOP,LEFT,RIGHT,STRAIGHT};
+FILE *fp;
+char *fname = "message.csv";
 
+FILE *fpmain;
+char *fnamemain = "main.csv";
 typedef struct
 {
   Neighbor_t neighbors[MAXN];
@@ -54,8 +58,12 @@ uint8_t colorNum[] = {
 
 // message rx callback function. Pushes message to ring buffer.
 void rxbuffer_push(message_t *msg, distance_measurement_t *dist) {
+    // fprintf(fp,"%d,%d\n", kilo_uid, kilo_ticks);
+
     received_message_t *rmsg = &RB_back();
     rmsg->msg = *msg;
+    fprintf(fp,"%d,%d,%d\n", kilo_uid, kilo_ticks,msg->data[0]);
+
     rmsg->dist = *dist;
     RB_pushback();
 }
@@ -154,6 +162,17 @@ void setup_message(void)
 
 void setup()
 {
+  fp = fopen( fname, "w" );
+  if( fp == NULL ){
+    printf( "%sファイルが開けません¥n", fname );
+    return;
+  }
+
+  fpmain = fopen( fnamemain, "w" );
+  if( fpmain == NULL ){
+    printf( "%sファイルが開けません¥n", fnamemain );
+    return;
+  }
   rand_seed(kilo_uid + 1); //seed the random number generator
   
   mydata->message_lock = 0;
@@ -229,6 +248,7 @@ void follow_edge()
 
 void loop()
 {
+  fprintf(fpmain,"%d,%d\n",kilo_uid,kilo_ticks);
   //receive messages
   receive_inputs();
   if(kilo_uid == 0)
