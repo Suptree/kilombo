@@ -434,20 +434,35 @@ void robot_explorer_behavior(){
 
 void loop()
 {
+<<<<<<< HEAD
   printf("ID : %d, state : %d\n",kilo_uid,mydata->bhv_state);
   fprintf(fpmain,"%d,%d,%d,%d,%d,%d,%d,%d\n",kilo_uid,kilo_ticks,mydata->bhv_state,mydata->bot_state,mydata->dist_state,mydata->maxgradient,mydata->move_type,mydata->N_Neighbors);
   int j = 0;
   printf("======================================\n");
   for(j = 0; j < mydata->N_Neighbors; j++) {
     printf("%d,%d,%d,%d,%d\n",kilo_uid,kilo_ticks,mydata->neighbors[j].ID,mydata->neighbors[j].bhv_state,mydata->neighbors[j].dist);
+=======
+
+  fprintf(fpmain,"%d,%d,%d,%d,%d,%d,%d,%d\n",kilo_uid,kilo_ticks,mydata->bhv_state,mydata->bot_state,mydata->dist_state,mydata->maxgradient,mydata->move_type,mydata->N_Neighbors);
+  int j = 0;
+  for(j = 0; j < mydata->N_Neighbors; j++) {
+    fprintf(fp,"%d,%d,%d,%d,%d\n",kilo_uid,kilo_ticks,mydata->neighbors[j].ID,mydata->neighbors[j].bhv_state,mydata->neighbors[j].dist);
+>>>>>>> d1516cfb376f8d925ecce862986f7f844c5ef221
   }
   //receive messages
   receive_inputs();
   if(kilo_uid == 0) // nest
+<<<<<<< HEAD
   {
     set_robot_nest_color();
     robot_nest_behavior();
   }
+=======
+    {
+      set_robot_nest_color();
+    robot_nest_behavior();
+    }
+>>>>>>> d1516cfb376f8d925ecce862986f7f844c5ef221
   else if(kilo_uid == 1) // food
   {
     set_robot_food_color();
