@@ -13,16 +13,16 @@
 #include "robot.h"
 // FILE *fp;
 FILE *fpbox[100];
+FILE *fpneighbors[100];
 typedef struct
 {
   Neighbor_t neighbors[MAXN];
 
   int N_Neighbors;
-  uint8_t bot_type;
-  uint8_t bot_state;
-  uint8_t move_type;
-  uint8_t bhv_state;
-  uint8_t dist_state;
+  uint8_t bot_type;  //{NEST, FOOD, NODE, EXPLORER, DETECTEDNODE}
+  uint8_t bot_state; //{WAIT, LISTEN, MOVE}
+  uint8_t move_type; //{STOP, FORWARD, LEFT, RIGHT}
+  uint8_t dist_state; // {TOOCLOSEDIST, NORMALDIST}
   uint8_t selfgradient;
   uint8_t maxgradient;
   uint8_t selfchainidmaxgradient;
@@ -94,44 +94,126 @@ message_t *message_tx()
   return &mydata->transmit_msg;
 }
 
+void set_bot_type(int type)
+{
+  mydata->bot_type = type;
+}
+int get_bot_type(void)
+{
+  return mydata->bot_type;
+}
+char* get_bot_type_str(int type)
+{
+  if(type == NEST)
+  {
+    return "NEST";
+  }
+  else if(type == FOOD)
+  {
+    return "FOOD";
+  }
+  else if(type == NODE)
+  {
+    return "NODE";
+  }
+  else if(type == EXPLORER)
+  {
+    return "EXPLORER";
+  }
+  else if(type == DETECTEDNODE)
+  {
+    return "DETECTEDNODE";
+  }
+  else
+  {
+    return "BOT_TYPE_UNKNOWN";
+  }
+}
+
 void set_bot_state(int state)
 {
   mydata->bot_state = state;
 }
-
-void set_bhv_state(int state)
+int get_bot_state(void)
 {
-  mydata->bhv_state = state;
+  return mydata->bot_state;
+}
+char* get_bot_state_str(int state)
+{
+  if(state == WAIT)
+  {
+    return "WAIT";
+  }
+  else if(state == LISTEN)
+  {
+    return "LISTEN";
+  }
+  else if(state == MOVE)
+  {
+    return "MOVE";
+  }
+  else
+  {
+    return "BOT_STATE_UNKNOWN";
+  }
+
 }
 
 void set_dist_state(int state)
 {
   mydata->dist_state = state;
 }
-
-int get_bot_state(void)
-{
-  return mydata->bot_state;
-}
-int get_bhv_state(void)
-{
-  return mydata->bhv_state;
-}
 int get_dist_state(void)
 {
   return mydata->dist_state;
+}
+char* get_dist_state_str(int state)
+{
+  if(state == TOOCLOSE_DISTANCE)
+  {
+    return "TOOCLOSE_DISTANCE";
+  }
+  else if(state == NORMALDIST)
+  {
+    return "NORMALDIST";
+  }
+  else
+  {
+    return "DIST_STATE_UNKNOWN";
+  }
 }
 
 void set_move_type(int type)
 {
   mydata->move_type = type;
 }
-
 int get_move_type(void)
 {
   return mydata->move_type;
 }
-
+char* get_move_type_str(int type)
+{
+  if(type == STOP)
+  {
+    return "STOP";
+  }
+  else if(type == LEFT)
+  {
+    return "LEFT";
+  }
+  else if(type == RIGHT)
+  {
+    return "RIGHT";
+  }
+  else if(type == FORWARD)
+  {
+    return "FORWARD";
+  }
+  else
+  {
+    return "MOVE_TYPE_UNKNOWN";
+  }
+}
 /* Process a received message at the front of the ring buffer.
  * Go through the list of neighbors. If the message is from a bot
  * already in the list, update the information, otherwise
@@ -166,8 +248,7 @@ void process_message()
   mydata->neighbors[i].dist = d;
   mydata->neighbors[i].N_Neighbors = data[2];
   mydata->neighbors[i].n_bot_state = data[3];
-  mydata->neighbors[i].bhv_state = data[4];
-  mydata->neighbors[i].bhv_state = data[5];
+  mydata->neighbors[i].n_bot_type = data[4];
 }
 
 /* Go through the list of neighbors, remove entries older than a threshold,
@@ -194,8 +275,7 @@ void setup_message(void)
   mydata->transmit_msg.data[1] = kilo_uid >> 8;       // 1 high ID
   mydata->transmit_msg.data[2] = mydata->N_Neighbors; // 2 number of neighbors
   mydata->transmit_msg.data[3] = get_bot_state();     // 3 bot state
-
-  mydata->transmit_msg.data[4] = get_bhv_state();
+  mydata->transmit_msg.data[4] = get_bot_type();
 
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
@@ -203,13 +283,15 @@ void setup_message(void)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////settup
 void setup()
 {
+
   int i = 0;
   for(i = 0; i < 20; i++) {
     FILE *fp;
  
     char fname[1000];
     sprintf(fname, "%d", i);
-
+    char tailstr[] = "_self.csv";
+    strcat(fname, tailstr);
     fp = fopen( fname, "w" );
     if( fp == NULL ){
       return;
@@ -217,18 +299,48 @@ void setup()
    fpbox[i] = fp;
 
   }
+  fprintf(fpbox[kilo_uid],"ID,kilo_tick,bot_type,bot_state,move_type,dist_state,neighbors_count\n");
+  for(i = 0; i < 20; i++) {
+    FILE *fp;
+ 
+    char fname[1000];
+    sprintf(fname, "%d", i);
+    char tailstr[] = "_neighbors.csv";
+    strcat(fname, tailstr);
+    fp = fopen( fname, "w" );
+    if( fp == NULL ){
+      return;
+    }
+   fpneighbors[i] = fp;
+
+  }
+  fprintf(fpneighbors[kilo_uid],"SELF_ID,kilo_tick,neighbor_ID,neighbor_dist,neighbor_bot_type,neighbor_bot_state,receive_timestamp\n");
+
   rand_seed(kilo_uid + 1); //seed the random number generator
 
 
-
+  if(kilo_uid == 0){
+    set_bot_type(NEST);
+    set_move_type(STOP);
+    set_bot_state(WAIT); 
+    set_dist_state(-1);
+  }
+  else if (kilo_uid == 1){
+    set_bot_type(FOOD);
+    set_move_type(STOP);
+    set_bot_state(WAIT); 
+    set_dist_state(-1);
+  }
+  else{
+    set_bot_type(EXPLORER);
+    set_move_type(STOP);
+    set_bot_state(LISTEN); 
+    set_dist_state(NORMALDIST);
+  }
 
   mydata->message_lock = 0;
 
   mydata->N_Neighbors = 0;
-  set_move_type(STOP);
-  set_bot_state(LISTEN);
-  set_bhv_state(EXPLORER);
-  setup_message();
 }
 
 void receive_inputs()
@@ -261,7 +373,7 @@ int find_node(){
   uint8_t i;
   for(i = 0; i < mydata->N_Neighbors; i++)
     {
-      if(mydata->neighbors[i].bhv_state == NODE) return 1;
+      if(mydata->neighbors[i].n_bot_type == NODE) return 1;
     }
   return 0;
 }
@@ -293,7 +405,7 @@ uint8_t find_node_num()
   uint8_t node_num = 0;
   for(i = 0; i < mydata->N_Neighbors; i++)
   {
-    if(mydata->neighbors[i].bhv_state == NODE ) node_num++;
+    if(mydata->neighbors[i].n_bot_type == NODE ) node_num++;
   }
   return node_num;
 }
@@ -365,7 +477,7 @@ void follow_edge()
    
 }
 void robot_node_behavior(){
-  if(mydata->bhv_state == DETECT){
+  if(mydata->bot_type == DETECTEDNODE){
     set_color(RGB(0,3,3));
   }else{
     set_color(RGB(3,3,3));
@@ -406,7 +518,7 @@ void robot_explorer_behavior(){
   // if(kilo_uid == 5)
   // printf("kilo_tick : %d\nfind_node_num : %d\n", kilo_ticks,find_node_num());
   if(find_food()){
-    set_bhv_state(DETECT);
+    set_bot_type(DETECTEDNODE);
     return;
   }
 
@@ -414,7 +526,7 @@ void robot_explorer_behavior(){
   {
   // if(kilo_uid == 5)
   // printf("true\n");
-    set_bhv_state(NODE);		
+    set_bot_type(NODE);
     return;	
   }
   follow_edge();
@@ -426,7 +538,6 @@ void robot_explorer_behavior(){
 
 void loop()
 {
-  fprintf(fpbox[kilo_uid],"ID : %d, kilo_tick : %d\n", kilo_uid,kilo_ticks);
   //receive messages
   receive_inputs();
   if(kilo_uid == 0) // nest
@@ -441,17 +552,22 @@ void loop()
   }
   else
   {
-    if(mydata->bhv_state == EXPLORER){
+    if(mydata->bot_type == EXPLORER){
     robot_explorer_behavior();  
-    }else if(mydata->bhv_state == NODE || mydata->bhv_state == DETECT){
+    }else if(mydata->bot_type == NODE || mydata->bot_type == DETECTEDNODE){
       robot_node_behavior();
-    }else if(mydata->bhv_state == LOSTCHAIN){
-      
     }else{
       printf("ERROR");
     }
   }
   setup_message();
+
+  fprintf(fpbox[kilo_uid],"%d,%d,%s,%s,%s,%s,%d\n",kilo_uid,kilo_ticks,get_bot_type_str(get_bot_type()), get_bot_state_str(get_bot_state()), get_move_type_str(get_move_type()), get_dist_state_str(get_dist_state()), mydata->N_Neighbors);
+  int z = 0;
+  for(z = 0; z < mydata->N_Neighbors;z++) 
+  {
+    fprintf(fpneighbors[kilo_uid],"%d,%d,%d,%d,%s,%s,%d\n",kilo_uid,kilo_ticks, mydata->neighbors[z].ID,mydata->neighbors[z].dist, get_bot_type_str(mydata->neighbors[z].n_bot_type), get_bot_state_str(mydata->neighbors[z].n_bot_state), mydata->neighbors[z].timestamp);
+  }
 }
 
 extern char* (*callback_botinfo) (void);

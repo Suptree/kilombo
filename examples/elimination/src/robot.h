@@ -20,7 +20,7 @@
 
 extern uint8_t NGenes;
 
-enum BOTTYPE {LAST, FOLLOWER, LEADER};
+enum BOTTYPE {NEST, FOOD, NODE, EXPLORER, DETECTEDNODE};
 enum BOTSTATES {WAIT, LISTEN, MOVE};
 
 // declare motion variable type
@@ -45,7 +45,8 @@ typedef struct {
   uint8_t n_bot_state;
   uint8_t N_Neighbors;
   uint32_t timestamp;
-  uint8_t bhv_state;
+  uint8_t n_bot_type;  //{NEST, FOOD, NODE, EXPLORER, DETECTEDNODE}
+
 
 } Neighbor_t;
 
@@ -115,7 +116,6 @@ typedef struct {
 
 
 
-enum BEHAVIORSTATES {NODE, EXPLORER, LOSTCHAIN, DETECT};
 
 void robot_explorer_behavior();
 
