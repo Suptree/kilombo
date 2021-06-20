@@ -3,6 +3,7 @@
 
 #include <kilombo.h>
 #define MAXN 20
+#define RB_SIZE 16  // Ring buffer size. Choose a power of two for faster code
 
 typedef struct
 {
@@ -34,5 +35,27 @@ typedef struct {
     message_t msg;
     distance_measurement_t dist;
 } received_message_t;
+
+#define RB_init() {	\
+    mydata->RXHead = 0; \
+    mydata->RXTail = 0;\
+}
+
+#define RB_empty() (mydata->RXHead == mydata->RXTail)
+
+#define RB_full()  ((mydata->RXHead+1)%RB_SIZE == mydata->RXTail)
+
+#define RB_front() mydata->RXBuffer[mydata->RXHead]
+
+#define RB_back() mydata->RXBuffer[mydata->RXTail]
+
+#define RB_popfront() mydata->RXHead = (mydata->RXHead+1)%RB_SIZE;
+
+#define RB_pushback() {\
+    mydata->RXTail = (mydata->RXTail+1)%RB_SIZE;\
+    if (RB_empty())\
+      { mydata->RXHead = (mydata->RXHead+1)%RB_SIZE;\
+  printf("Full.\n"); }\
+}
 
 #endif
