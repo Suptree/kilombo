@@ -11,14 +11,8 @@
 #include "nest.h"
 #include "food.h"
 #include "robot.h"
-
-FILE *fp;
-char *fname = "neibors.csv";
-FILE *fpmain;
-char *fnamemain = "self.csv";
-FILE *fptrans;
-char *fnametrans = "message.csv";
-
+// FILE *fp;
+FILE *fpbox[100];
 typedef struct
 {
   Neighbor_t neighbors[MAXN];
@@ -88,7 +82,6 @@ uint8_t colorNum[] = {
 // message rx callback function. Pushes message to ring buffer.
 void rxbuffer_push(message_t *msg, distance_measurement_t *dist) {
     received_message_t *rmsg = &RB_back();
-fprintf(fptrans,"%d,%d,%d\n",kilo_uid,kilo_ticks,msg->data[0]);
     rmsg->msg = *msg;
     rmsg->dist = *dist;
     RB_pushback();
@@ -201,33 +194,33 @@ void setup_message(void)
   mydata->transmit_msg.data[1] = kilo_uid >> 8;       // 1 high ID
   mydata->transmit_msg.data[2] = mydata->N_Neighbors; // 2 number of neighbors
   mydata->transmit_msg.data[3] = get_bot_state();     // 3 bot state
-  printf("get()-> ID : %d, bhv_State : %d\n", kilo_uid, get_bhv_state());
 
   mydata->transmit_msg.data[4] = get_bhv_state();
 
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
 }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////settup
 void setup()
 {
-  rand_seed(kilo_uid + 1); //seed the random number generator
-  fp = fopen( fname, "w" );
-  if( fp == NULL ){
-    printf( "%sファイルが開けません¥n", fname );
-    return;
-  }
-  fpmain = fopen( fnamemain, "w" );
-  if( fpmain == NULL ){
-    printf( "%sファイルが開けません¥n", fnamemain );
-    return;
-  }
+  int i = 0;
+  for(i = 0; i < 20; i++) {
+    FILE *fp;
+ 
+    char fname[1000];
+    sprintf(fname, "%d", i);
 
-  fptrans = fopen( fnametrans, "w" );
-  if( fptrans == NULL ){
-    printf( "%sファイルが開けません¥n", fnametrans );
-    return;
+    fp = fopen( fname, "w" );
+    if( fp == NULL ){
+      return;
+    }
+   fpbox[i] = fp;
+
   }
+  rand_seed(kilo_uid + 1); //seed the random number generator
+
+
+
 
   mydata->message_lock = 0;
 
@@ -433,12 +426,7 @@ void robot_explorer_behavior(){
 
 void loop()
 {
-  int j = 0;
-  for(j = 0; j < mydata->N_Neighbors; j++) {
-
-  int j = 0;
-  for(j = 0; j < mydata->N_Neighbors; j++) {
-  }
+  fprintf(fpbox[kilo_uid],"ID : %d, kilo_tick : %d\n", kilo_uid,kilo_ticks);
   //receive messages
   receive_inputs();
   if(kilo_uid == 0) // nest
