@@ -299,7 +299,7 @@ void setup()
    fpbox[i] = fp;
 
   }
-  fprintf(fpbox[kilo_uid],"ID,kilo_tick,bot_type,bot_state,move_type,dist_state,neighbors_count\n");
+  fprintf(fpbox[kilo_uid],"kilo_tick,bot_type,bot_state,move_type,dist_state,neighbors_count\n");
   for(i = 0; i < 20; i++) {
     FILE *fp;
  
@@ -314,7 +314,7 @@ void setup()
    fpneighbors[i] = fp;
 
   }
-  fprintf(fpneighbors[kilo_uid],"SELF_ID,kilo_tick,neighbor_ID,neighbor_dist,neighbor_bot_type,neighbor_bot_state,receive_timestamp\n");
+  fprintf(fpneighbors[kilo_uid],"kilo_tick,neighbor_ID,neighbor_dist,neighbor_bot_type,neighbor_bot_state,receive_timestamp\n");
 
   rand_seed(kilo_uid + 1); //seed the random number generator
 
@@ -335,7 +335,7 @@ void setup()
     set_bot_type(EXPLORER);
     set_move_type(STOP);
     set_bot_state(LISTEN); 
-    set_dist_state(NORMALDIST);
+    set_dist_state(TOOCLOSEDIST);
   }
 
   mydata->message_lock = 0;
@@ -492,8 +492,8 @@ void robot_explorer_behavior(){
   set_color(RGB(0,0,3));
   if(kilo_ticks % 110 != ( kilo_uid * 10  ) ){
     // if(kilo_uid == 3 || kilo_uid == 4 || kilo_uid == 8){
-  set_motors(0, 0);
-  set_move_type(STOP);
+    set_motors(0, 0);
+    set_move_type(STOP);
 
     // }else
     return;
@@ -562,11 +562,11 @@ void loop()
   }
   setup_message();
 
-  fprintf(fpbox[kilo_uid],"%d,%d,%s,%s,%s,%s,%d\n",kilo_uid,kilo_ticks,get_bot_type_str(get_bot_type()), get_bot_state_str(get_bot_state()), get_move_type_str(get_move_type()), get_dist_state_str(get_dist_state()), mydata->N_Neighbors);
+  fprintf(fpbox[kilo_uid],"%d,%s,%s,%s,%s,%d\n",kilo_ticks,get_bot_type_str(get_bot_type()), get_bot_state_str(get_bot_state()), get_move_type_str(get_move_type()), get_dist_state_str(get_dist_state()), mydata->N_Neighbors);
   int z = 0;
   for(z = 0; z < mydata->N_Neighbors;z++) 
   {
-    fprintf(fpneighbors[kilo_uid],"%d,%d,%d,%d,%s,%s,%d\n",kilo_uid,kilo_ticks, mydata->neighbors[z].ID,mydata->neighbors[z].dist, get_bot_type_str(mydata->neighbors[z].n_bot_type), get_bot_state_str(mydata->neighbors[z].n_bot_state), mydata->neighbors[z].timestamp);
+    fprintf(fpneighbors[kilo_uid],"%d,%d,%d,%s,%s,%d\n",kilo_ticks, mydata->neighbors[z].ID,mydata->neighbors[z].dist, get_bot_type_str(mydata->neighbors[z].n_bot_type), get_bot_state_str(mydata->neighbors[z].n_bot_state), mydata->neighbors[z].timestamp);
   }
 }
 
