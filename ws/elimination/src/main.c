@@ -276,7 +276,7 @@ void setup_message(void)
   mydata->transmit_msg.data[2] = mydata->N_Neighbors; // 2 number of neighbors
   mydata->transmit_msg.data[3] = get_bot_state();     // 3 bot state
   mydata->transmit_msg.data[4] = get_bot_type();
-  mydata->transmit_msg.data[5] = mydata->
+  mydata->transmit_msg.data[5] = mydata->gradient;
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
 }
