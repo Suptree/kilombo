@@ -259,7 +259,7 @@ void purgeNeighbors(void)
   int8_t i;
 
   for (i = mydata->N_Neighbors-1; i >= 0; i--)
-    if (kilo_ticks - mydata->neighbors[i].timestamp  > 64) //32 ticks = 1 s
+    if (kilo_ticks - mydata->neighbors[i].timestamp  > 256) //32 ticks = 1 s
       { //this one is too old.
   mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors-1];
   //replace it by the last entry
@@ -486,8 +486,16 @@ void robot_node_behavior(){
   set_motors(0, 0);
   set_move_type(STOP);
 }
-
+float count = 0;
 void robot_explorer_behavior(){
+
+  if(kilo_uid == 3) {
+    // printf("認識率 : %f\n", mydata->N_Neighbors/5.0);
+    if(mydata->N_Neighbors/5.0 == 1.0){
+      count++;
+    }
+    printf("count / kilotick : %f\n", count/kilo_ticks);
+  }
 
   set_color(RGB(0,0,3));
   if(kilo_ticks % 110 != ( kilo_uid * 10  ) ){
@@ -529,7 +537,7 @@ void robot_explorer_behavior(){
     set_bot_type(NODE);
     return;	
   }
-  follow_edge();
+  // follow_edge();
 
   
 

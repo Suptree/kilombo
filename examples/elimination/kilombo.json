@@ -24,6 +24,6 @@
     "stateFileSteps" : 0,
     "colorscheme" : "bright",
     "GUI"  : 1,
-    "msgSuccessRate" : 0.8,
+    "msgSuccessRate" : 8.0,
     "distanceNoise" : 2
 }
