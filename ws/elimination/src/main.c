@@ -574,10 +574,10 @@ int calculate_E_value(uint8_t g) {
 }
 void orbit_normal() 
 {
-  if (find_nearest_N_dist() < TOOCLOSE_DISTANCE) {
+  if (find_nearest_Node_dist() < TOOCLOSE_DISTANCE) {
         mydata->dist_state = TOOCLOSEDIST;
     } else{
-        if (find_nearest_N_dist() < DESIRED_DISTANCE)
+        if (find_nearest_Node_dist() < DESIRED_DISTANCE)
     {
             set_motors(kilo_turn_left, 0);
             set_move_type(LEFT);
@@ -590,7 +590,7 @@ void orbit_normal()
 }
 
 void orbit_tooclose() {
-  if (find_nearest_N_dist() >= DESIRED_DISTANCE)
+  if (find_nearest_Node_dist() >= DESIRED_DISTANCE)
     mydata->dist_state = NORMALDIST;
   else{
     set_motors(kilo_turn_left,kilo_turn_right);
@@ -600,37 +600,37 @@ void orbit_tooclose() {
 
 void follow_edge()
 {
-  // if(mydata->dist_state == NORMALDIST){
-  //   orbit_normal();
-  //   return;
-  // }else{
-  //   orbit_tooclose();
-  //   return;
-  // } 
-  uint8_t current = find_nearest_Node_dist();
+  if(mydata->dist_state == NORMALDIST){
+    orbit_normal();
+    return;
+  }else{
+    orbit_tooclose();
+    return;
+  } 
+  // uint8_t current = find_nearest_Node_dist();
 
-  if (current > ORBIT_R) {
-    if (current >= mydata->pre_distance) {
-      set_motors(kilo_turn_left, 0);
-      set_move_type(LEFT);
-      // if(kilo_uid == 3) printf("kilo_tick : %d, LEFT\n",kilo_ticks);
-    } else {
-      set_motors(kilo_turn_left,kilo_turn_right);
-      set_move_type(FORWARD);
-      // if(kilo_uid == 3) printf("kilo_tick : %d, FORWARD1\n",kilo_ticks);
-    }
-  } else {
-    if (current <= mydata->pre_distance) {
-      set_motors(kilo_turn_left,kilo_turn_right);
-      set_move_type(FORWARD);
-      // if(kilo_uid == 3) printf("kilo_tick : %d, FORWARD2\n",kilo_ticks);
-    } else {
-      set_motors(0, kilo_turn_right);
-      set_move_type(RIGHT);
-      // if(kilo_uid == 3) printf("kilo_tick : %d, RIGHT\n",kilo_ticks);
-    }
-  }
-  mydata->pre_distance = current;
+  // if (current > ORBIT_R) {
+  //   if (current  > mydata->pre_distance) {
+  //     set_motors(kilo_turn_left, 0);
+  //     set_move_type(LEFT);
+  //     // if(kilo_uid == 3) printf("kilo_tick : %d, LEFT\n",kilo_ticks);
+  //   } else {
+  //     set_motors(kilo_turn_left,kilo_turn_right);
+  //     set_move_type(FORWARD);
+  //     // if(kilo_uid == 3) printf("kilo_tick : %d, FORWARD1\n",kilo_ticks);
+  //   }
+  // } else {
+  //   if (current < mydata->pre_distance) {
+  //     set_motors(kilo_turn_left,kilo_turn_right);
+  //     set_move_type(FORWARD);
+  //     // if(kilo_uid == 3) printf("kilo_tick : %d, FORWARD2\n",kilo_ticks);
+  //   } else {
+  //     set_motors(0, kilo_turn_right);
+  //     set_move_type(RIGHT);
+  //     // if(kilo_uid == 3) printf("kilo_tick : %d, RIGHT\n",kilo_ticks);
+  //   }
+  // }
+  // mydata->pre_distance = current;
    
 }
 void robot_node_behavior(){ /////////////////////////////////////////////////////// NODE ////////////////////////////////
@@ -678,25 +678,25 @@ void robot_explorer_behavior(){ //////////////////////////////////// EXPLORER //
   set_color(RGB(0,0,3));
 
 
-  // if(mydata->N_Neighbors == 1 ){
-  //   if(mydata->neighbors[0].N_Neighbors == 1) {
-  //     set_bot_type(LOSTCHAIN);
-  //     set_color(colorNum[9]);
-  //     set_motors(0, 0);
-  //     set_move_type(STOP);
+  if(mydata->N_Neighbors == 1 ){
+    if(mydata->neighbors[0].N_Neighbors == 1) {
+      set_bot_type(LOSTCHAIN);
+      set_color(colorNum[9]);
+      set_motors(0, 0);
+      set_move_type(STOP);
 
-  //     return;
-  //   }
-  // }else if(mydata->N_Neighbors == 0 && kilo_ticks > 100) {
-  //   set_bot_type(LOSTCHAIN);
+      return;
+    }
+  }else if(mydata->N_Neighbors == 0 && kilo_ticks > 100) {
+    set_bot_type(LOSTCHAIN);
 
-  //   set_color(colorNum[9]);
-  //   set_motors(0, 0);
-  //   set_move_type(STOP);
+    set_color(colorNum[9]);
+    set_motors(0, 0);
+    set_move_type(STOP);
 
-  //   return;
+    return;
 
-  // }
+  }
 
 
   //// Extention Mechanism
@@ -830,6 +830,8 @@ char *botinfo(void)
   p += n;
 
   n = sprintf (p, "Nearest_Node_DIST: %d ", find_nearest_Node_dist() );
+  p += n;
+  n = sprintf (p, "Pre_DIST: %d ", mydata->pre_distance );
   p += n;
 
 
