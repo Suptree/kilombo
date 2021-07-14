@@ -11,9 +11,11 @@
 #include "nest.h"
 #include "food.h"
 #include "robot.h"
-// FILE *fp;
-// FILE *fpbox[100];
-// FILE *fpneighbors[100];
+#ifdef
+FILE *fp;
+FILE *fpbox[100];
+FILE *fpneighbors[100];
+#endif
 typedef struct
 {
   Neighbor_t neighbors[MAXN];
@@ -578,18 +580,16 @@ int calculate_E_value(uint8_t g) {
 void orbit_normal() 
 {
   if (find_nearest_Node_dist() < TOOCLOSE_DISTANCE) {
-        mydata->dist_state = TOOCLOSEDIST;
-    } else{
-        if (find_nearest_Node_dist() < DESIRED_DISTANCE)
-    {
-            set_motors(kilo_turn_left, 0);
-            set_move_type(LEFT);
-    }else{
-
-          set_motors(0, kilo_turn_right);
-          set_move_type(RIGHT);
+    mydata->dist_state = TOOCLOSEDIST;
+  } else {
+    if (find_nearest_Node_dist() < DESIRED_DISTANCE) {
+      set_motors(kilo_turn_left, 0);
+      set_move_type(LEFT);
+    } else {
+      set_motors(0, kilo_turn_right);
+      set_move_type(RIGHT);
     }
-    }
+  }
 }
 
 void orbit_tooclose() {
