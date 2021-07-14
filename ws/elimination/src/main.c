@@ -12,8 +12,8 @@
 #include "food.h"
 #include "robot.h"
 // FILE *fp;
-FILE *fpbox[100];
-FILE *fpneighbors[100];
+// FILE *fpbox[100];
+// FILE *fpneighbors[100];
 typedef struct
 {
   Neighbor_t neighbors[MAXN];
@@ -41,10 +41,13 @@ typedef struct
 
 REGISTER_USERDATA(MyUserdata)
 // declare constants
-static const uint8_t TOOCLOSE_DISTANCE = 60; // 40 mm
-static const uint8_t DESIRED_DISTANCE = 80; // 60 mm
-static const uint8_t ORBIT_R = 60; // 40 mm
+// static const uint8_t TOOCLOSE_DISTANCE = 60; // 40 mm
+// static const uint8_t DESIRED_DISTANCE = 80; // 60 mm
+// static const uint8_t ORBIT_R = 60; // 40 mm
 
+static const uint8_t TOOCLOSE_DISTANCE = 40; // 40 mm
+static const uint8_t DESIRED_DISTANCE = 60; // 60 mm
+static const uint8_t ORBIT_R = 40; // 40 mm
 #ifdef SIMULATOR
 #include <stdio.h>    // for printf
 #else
@@ -296,37 +299,37 @@ void setup_message(void)
 void setup()
 {
 
-  int i = 0;
-  for(i = 0; i < 20; i++) {
-    FILE *fp;
+  // int i = 0;
+  // for(i = 0; i < 20; i++) {
+  //   FILE *fp;
  
-    char fname[1000];
-    sprintf(fname, "%d", i);
-    char tailstr[] = "_self.csv";
-    strcat(fname, tailstr);
-    fp = fopen( fname, "w" );
-    if( fp == NULL ){
-      return;
-    }
-   fpbox[i] = fp;
+  //   char fname[1000];
+  //   sprintf(fname, "%d", i);
+  //   char tailstr[] = "_self.csv";
+  //   strcat(fname, tailstr);
+  //   fp = fopen( fname, "w" );
+  //   if( fp == NULL ){
+  //     return;
+  //   }
+  //  fpbox[i] = fp;
 
-  }
-  fprintf(fpbox[kilo_uid],"kilo_tick,bot_type,bot_state,move_type,dist_state,neighbors_count\n");
-  for(i = 0; i < 20; i++) {
-    FILE *fp;
+  // }
+  // fprintf(fpbox[kilo_uid],"kilo_tick,bot_type,bot_state,move_type,dist_state,neighbors_count\n");
+  // for(i = 0; i < 20; i++) {
+  //   FILE *fp;
  
-    char fname[1000];
-    sprintf(fname, "%d", i);
-    char tailstr[] = "_neighbors.csv";
-    strcat(fname, tailstr);
-    fp = fopen( fname, "w" );
-    if( fp == NULL ){
-      return;
-    }
-   fpneighbors[i] = fp;
+  //   char fname[1000];
+  //   sprintf(fname, "%d", i);
+  //   char tailstr[] = "_neighbors.csv";
+  //   strcat(fname, tailstr);
+  //   fp = fopen( fname, "w" );
+  //   if( fp == NULL ){
+  //     return;
+  //   }
+  //  fpneighbors[i] = fp;
 
-  }
-  fprintf(fpneighbors[kilo_uid],"kilo_tick,neighbor_ID,neighbor_dist,neighbor_bot_type,neighbor_bot_state,receive_timestamp\n");
+  // }
+  // fprintf(fpneighbors[kilo_uid],"kilo_tick,neighbor_ID,neighbor_dist,neighbor_bot_type,neighbor_bot_state,receive_timestamp\n");
 
   rand_seed(kilo_uid + 1); //seed the random number generator
 
@@ -701,8 +704,9 @@ void robot_explorer_behavior(){ //////////////////////////////////// EXPLORER //
 
   //// Extention Mechanism
   if(is_there_higher_gradient_chain() == 0 ){ 
-    if(find_nearest_Node_dist() > ORBIT_R) {
+    // if(find_nearest_Node_dist() > ORBIT_R) {
 
+    if(find_nearest_N_dist() > ORBIT_R) {
       uint8_t i;
       uint8_t next_chain_id = 100;
       for(i = 0; i < mydata->N_Neighbors; i++){
@@ -781,12 +785,12 @@ void loop() //////////////////////////////////////////////// LOOP //////////////
   }
   setup_message();
 
-  fprintf(fpbox[kilo_uid],"%d,%s,%s,%s,%s,%d\n",kilo_ticks,get_bot_type_str(get_bot_type()), get_bot_state_str(get_bot_state()), get_move_type_str(get_move_type()), get_dist_state_str(get_dist_state()), mydata->N_Neighbors);
-  int z = 0;
-  for(z = 0; z < mydata->N_Neighbors;z++) 
-  {
-    fprintf(fpneighbors[kilo_uid],"%d,%d,%d,%s,%s,%d\n",kilo_ticks, mydata->neighbors[z].ID,mydata->neighbors[z].dist, get_bot_type_str(mydata->neighbors[z].n_bot_type), get_bot_state_str(mydata->neighbors[z].n_bot_state), mydata->neighbors[z].timestamp);
-  }
+  // fprintf(fpbox[kilo_uid],"%d,%s,%s,%s,%s,%d\n",kilo_ticks,get_bot_type_str(get_bot_type()), get_bot_state_str(get_bot_state()), get_move_type_str(get_move_type()), get_dist_state_str(get_dist_state()), mydata->N_Neighbors);
+  // int z = 0;
+  // for(z = 0; z < mydata->N_Neighbors;z++) 
+  // {
+  //   fprintf(fpneighbors[kilo_uid],"%d,%d,%d,%s,%s,%d\n",kilo_ticks, mydata->neighbors[z].ID,mydata->neighbors[z].dist, get_bot_type_str(mydata->neighbors[z].n_bot_type), get_bot_state_str(mydata->neighbors[z].n_bot_state), mydata->neighbors[z].timestamp);
+  // }
 }
 
 extern char* (*callback_botinfo) (void);
