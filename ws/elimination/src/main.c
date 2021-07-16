@@ -12,7 +12,7 @@
 #include "food.h"
 #include "robot.h"
 
-#define DEBUG_CSV
+// #define DEBUG_CSV
 #ifdef DEBUG_CSV
 FILE *fp;
 FILE *fpbox[100];
@@ -45,9 +45,9 @@ typedef struct
 
 REGISTER_USERDATA(MyUserdata)
 // declare constants
-static const uint8_t TOOCLOSE_DISTANCE = 60; // 40 mm
-static const uint8_t DESIRED_DISTANCE = 80; // 60 mm
-static const uint8_t ORBIT_R = 60; // 40 mm
+static const uint8_t TOOCLOSE_DISTANCE = 40; // 40 mm
+static const uint8_t DESIRED_DISTANCE = 60; // 60 mm
+static const uint8_t ORBIT_R = 40; // 40 mm
 
 // static const uint8_t TOOCLOSE_DISTANCE = 40; // 40 mm
 // static const uint8_t DESIRED_DISTANCE = 60; // 60 mm
