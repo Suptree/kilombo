@@ -1,0 +1,103 @@
+{
+  "bot_states": [
+    {
+      "ID": 0,
+      "direction": -3.1319511540302676,
+      "state": {},
+      "x_position": -376.0,
+      "y_position": 237.33332824707031
+    },
+    {
+      "ID": 1,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -402.66665649414062,
+      "y_position": 98.666664123535156
+    },
+    {
+      "ID": 2,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -380.0,
+      "y_position": 162.66667175292969
+    },
+    {
+      "ID": 3,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -169.33332824707031,
+      "y_position": 30.666666030883789
+    },
+    {
+      "ID": 4,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -398.66665649414062,
+      "y_position": -34.666667938232422
+    },
+    {
+      "ID": 5,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": 64.0,
+      "y_position": 13.333333015441895
+    },
+    {
+      "ID": 6,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -333.33334350585938,
+      "y_position": 209.33332824707031
+    },
+    {
+      "ID": 7,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -105.33333587646484,
+      "y_position": 26.666666030883789
+    },
+    {
+      "ID": 8,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -420.0,
+      "y_position": 32.0
+    },
+    {
+      "ID": 9,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": 2.6666667461395264,
+      "y_position": 28.0
+    },
+    {
+      "ID": 10,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -274.66665649414062,
+      "y_position": -52.0
+    },
+    {
+      "ID": 11,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -210.66667175292969,
+      "y_position": -20.0
+    },
+    {
+      "ID": 12,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -52.0,
+      "y_position": -4.0
+    },
+    {
+      "ID": 13,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": -340.0,
+      "y_position": -61.333332061767578
+    }
+  ],
+  "ticks": 851
+}

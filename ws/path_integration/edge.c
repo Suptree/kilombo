@@ -8,13 +8,19 @@
 #include <kilombo.h>
 
 #include "edge.h"
-int total_right_count = 0;
-int total_left_count = 0;
-int right_count = 0;
-int left_count = 0;
-int RIGHT_FLAG = 1;
-int LEFT_FLAG = 0;
 
+double angle = 90.0;
+double vec[2] = {0.0, 0.0};
+const double ONE_STEP_MOVE_DIST = 33.0 * M_PI / 660.0;
+const double ONE_STEP_ROTATE_ANGLE = 360.0 / 660.0;
+double total_right_count = 0;
+double total_left_count = 0;
+
+enum
+{
+  X,
+  Y
+};
 enum
 {
   STOP,
@@ -60,7 +66,15 @@ uint8_t colorNum[] = {
     RGB(1, 1, 1), //8  - white
     RGB(3, 3, 3)  //9  - bright white
 };
+double angle_trim(double a)
+{
+  if (a < 0)
+    a = 360.0 + a;
+  if (a > 360)
+    a = a - 360.0;
 
+  return a;
+}
 // message rx callback function. Pushes message to ring buffer.
 void rxbuffer_push(message_t *msg, distance_measurement_t *dist)
 {
@@ -98,30 +112,6 @@ void set_move_type(int type)
 int get_move_type(void)
 {
   return mydata->move_type;
-}
-
-char *get_move_type_str(int type)
-{
-  if (type == STOP)
-  {
-    return "STOP";
-  }
-  else if (type == LEFT)
-  {
-    return "LEFT";
-  }
-  else if (type == RIGHT)
-  {
-    return "RIGHT";
-  }
-  else if (type == STRAIGHT)
-  {
-    return "STRAIGHT";
-  }
-  else
-  {
-    return "UNKNOWN";
-  }
 }
 
 /* Process a received message at the front of the ring buffer.
@@ -244,57 +234,90 @@ uint8_t find_nearest_N_dist()
   return dist;
 }
 
-void follow_take_turns()
+void follow_edge()
 {
-  if (RIGHT_FLAG == 1)
+  uint8_t desired_dist = 55;
+  if (find_nearest_N_dist() > desired_dist)
   {
     if (get_move_type() == LEFT)
       spinup_motors();
     set_motors(0, kilo_turn_right);
     set_move_type(RIGHT);
-    right_count++;
-    if (right_count >  1400)
-    {
-      RIGHT_FLAG = 0;
-      right_count = 0;
-      LEFT_FLAG = 1;
-    }
+    total_right_count++;
+    angle = angle - ONE_STEP_ROTATE_ANGLE;
+    vec[X] = vec[X] + ONE_STEP_MOVE_DIST * cos(angle * M_PI / 180.0);
   }
 
+  //if(find_nearest_N_dist() < desired_dist)
   else
   {
     if (get_move_type() == RIGHT)
       spinup_motors();
     set_motors(kilo_turn_left, 0);
     set_move_type(LEFT);
-    left_count++;
-    if (left_count > 0){
-      LEFT_FLAG = 0;
-      left_count = 0;
-      RIGHT_FLAG = 1;
-    }
+    total_left_count++;
+    angle = angle + ONE_STEP_ROTATE_ANGLE;
+    vec[Y] = vec[Y] + ONE_STEP_MOVE_DIST * sin(angle * M_PI / 180.0);
   }
 }
+void right_and_straight()
+{
+  // printf("%f",183.0/660.0 * 1.0/2.0 + 1.0/2.0);
+  // if((total_right_count-total_left_count)/660.0 < 183.0/660.0 * 1.0/2.0 + 1.0/2.0 )
+  // {
+  // if(get_move_type() == LEFT)
+  //   spinup_motors();
+  // set_motors(0, kilo_turn_right);
+  // set_move_type(RIGHT);
+  // total_right_count++;
+  //  }else{
 
+  set_motors(kilo_turn_left, kilo_turn_right);
+  //  }
+}
+double a[2] = {1, 0};
 void loop()
 {
   //receive messages
   receive_inputs();
-  if (kilo_uid == 0)
+  if (kilo_uid ==0)
   {
-    if (get_move_type() == LEFT)
-    {
-      total_left_count++;
-    }
-    else if (get_move_type() == RIGHT)
-    {
-      total_right_count++;
-    }
     set_color(RGB(3, 0, 0));
-    follow_take_turns();
-    printf("kilo_tick : %d, left_count : %d, right_count : %d, total_left_count : %d, total_right_count : %d\n", kilo_ticks, left_count, right_count,total_left_count,total_right_count);
+
+    // if ((total_right_count - total_left_count + 450.0) / 660.0 < 450.0 / 660.0 * 1.0 / 2.0 + 1.0 / 2.0)
+    double angle_tes = angle;
+    if (angle_tes < 0)
+      angle_tes = 360.0 + angle_tes;
+    if (angle_tes > 360)
+      angle_tes = angle_tes - 360.0;
+
+    double angle_acos = acos(vec[X] / sqrt(pow(vec[X], 2) + pow(vec[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
+    if (vec[Y] < 0)
+      angle_acos = 360.0 - angle_acos;
+
+    if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < 5000 )
+    {
+      follow_edge();
+    }
+    else
+    {
+      right_and_straight();
+    }
+    // printf("total_count_left : %f, tatal_count_right : %f, hidari : %f, migi : %f\n", total_left_count, total_right_count,(total_right_count - total_left_count + 183.0) / 660.0, 183.0 / 660.0 * 1.0 / 2.0 + 1.0 / 2.0);
+    // double angle_tes = angle;
+    // if(angle_tes < 0) angle_tes = 360.0 + angle_tes;
+    // if(angle_tes > 360) angle_tes = angle_tes - 360.0;
+
+    // double angle_acos = acos(vec[X]/sqrt(pow(vec[X],2)+pow(vec[Y],2))*sqrt(pow(1.0,2)+pow(0.0,2)))*180.0/M_PI ;
+    // if(vec[Y] < 0) angle_acos = 360.0 - angle_acos;
+    // printf("angle_tes : %f\n", angle_tes);
+    // printf("kilo_ticks : %d, angle : %f, vec[X] : %f, vec[Y] : %f, arccos : %f\n", kilo_ticks, angle, vec[X], vec[Y], angle_acos);
+    // if (fabs(angle_trim(180 + angle_acos) - angle_tes) < 10)
+    //   printf("GOGOGOGOGOGO\n");
   }
 
+  // acos(vec[X]/sqrt(pow(vec[X],2)+pow(vec[Y],2))*sqrt(pow(1.0,2)+pow(0.0,2)))*180.0/M_PI );
+  // acos(1.0/(sqrt(pow(1.0,2.0)*pow(1.0,2.0))*sqrt(pow(1.0,2.0))))*180.0/M_PI );
   setup_message();
 }
 
@@ -333,9 +356,6 @@ char *botinfo(void)
   p += n;
 
   n = sprintf(p, "Ns: %d, dist: %d\n ", mydata->N_Neighbors, find_nearest_N_dist());
-  p += n;
-
-  n = sprintf(p, "move type : %s", get_move_type_str(get_move_type()));
   p += n;
 
   return botinfo_buffer;
