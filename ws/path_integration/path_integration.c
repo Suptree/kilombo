@@ -453,7 +453,7 @@ void follow_edge()
 void left_follow_edge()
 {
 
-  printf("==== START ====\n");
+  // printf("==== START ====\n");
   uint8_t desired_dist = 55;
   if (find_nearest_N_dist() > desired_dist)
   {
@@ -461,7 +461,7 @@ void left_follow_edge()
       spinup_motors();
     set_motors(kilo_turn_left, 0);
     set_move_type(LEFT);
-    printf("LEFT\n");
+    // printf("LEFT\n");
     mydata->body_angle = mydata->body_angle + ONE_STEP_ROTATE_ANGLE;
     mydata->vec[X] = mydata->vec[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
     mydata->vec[Y] = mydata->vec[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
@@ -475,7 +475,7 @@ void left_follow_edge()
     set_motors(0, kilo_turn_right);
     set_move_type(RIGHT);
 
-    printf("RIGHT\n");
+    // printf("RIGHT\n");
     mydata->body_angle = mydata->body_angle - ONE_STEP_ROTATE_ANGLE;
     mydata->vec[X] = mydata->vec[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
     mydata->vec[Y] = mydata->vec[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
@@ -540,7 +540,7 @@ void bhv_explorer()
 
   if (find_Food() == 1 && mydata->turn_around_mode_flag != 2) //true
   {
-    // printf("[1]find_Food() == 1\n");
+    printf("[1]find_Food() == 1\n");
     if (mydata->vec[Y] > 0)
     {
 
@@ -581,6 +581,7 @@ void bhv_explorer()
   }
   if (mydata->turn_around_mode_flag == 1 && find_Food() == 0)
   {
+    printf("[2]find_Food() == 0\n");
     mydata->turn_around_mode_flag = 2;
   }
   if (mydata->turn_around_mode_flag == 2)
@@ -599,18 +600,21 @@ void bhv_explorer()
     }
     else
     {
-      if (fabs(angle_trim(180 + angle_acos) - angle_tes) < 1 && kilo_ticks > (kilo_uid - 20 + 1) * 10000 && mydata->is_past_food == 1)
+      if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < (kilo_uid - 20 + 1) * 10000 )
       {
 
+        left_follow_edge();
+      }
+      else if(mydata->is_past_food ==1)
+      {
         go_straight();
 
         if ((find_Nest() || find_NewNode()))
           set_bot_type(NEW_NODE);
-      }
-      else
-      {
+      }else{
         left_follow_edge();
       }
+
 
       // printf("left edge follow\n");
     }
@@ -629,18 +633,21 @@ void bhv_explorer()
   //  if(mydata->turn_around_mode_flag == 0)
   { // 通常
 
-      if (fabs(angle_trim(180 + angle_acos) - angle_tes) < 1 && kilo_ticks > (kilo_uid - 20 + 1) * 10000 && mydata->is_past_food == 1)
+      if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < (kilo_uid - 20 + 1) * 10000 )
       {
 
+        follow_edge();
+      }
+      else if(mydata->is_past_food ==1)
+      {
         go_straight();
 
         if ((find_Nest() || find_NewNode()))
           set_bot_type(NEW_NODE);
-      }
-      else
-      {
+      }else{
         follow_edge();
       }
+
   }
   // else{
   //   set_motors(0, 0);
