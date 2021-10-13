@@ -34,6 +34,7 @@ typedef struct
   uint8_t is_tail;               //末尾かどうか use NODE bot
   int around_tick;
   uint8_t is_past_food;
+  uint8_t straight_flag;
 
   message_t transmit_msg;
   char message_lock;
@@ -509,7 +510,7 @@ uint8_t is_there_higher_gradient()
 
 uint8_t turn_arround_mode()
 {
-  if (find_Tail() == 1 && kilo_ticks > (kilo_uid - 20 + 1) * 10000)
+  if (find_Tail() == 1 && kilo_ticks > (kilo_uid - 20 + 1) * 15000)
   {
     double angle_acos = acos(mydata->vec[X] / sqrt(pow(mydata->vec[X], 2) + pow(mydata->vec[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
 
@@ -600,25 +601,27 @@ void bhv_explorer()
     }
     else
     {
-      if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < (kilo_uid - 20 + 1) * 10000 )
+      if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < (kilo_uid - 20 + 1) * 15000)
       {
 
         left_follow_edge();
       }
-      else if(mydata->is_past_food ==1)
+      else if (mydata->is_past_food == 1 && find_Food() == 1)
       {
-        go_straight();
+        mydata->straight_flag = 1;
+        // go_straight();
 
-        if ((find_Nest() || find_NewNode()))
-          set_bot_type(NEW_NODE);
-      }else{
+        // if ((find_Nest() || find_NewNode()))
+        //   set_bot_type(NEW_NODE);
+      }
+      else
+      {
         left_follow_edge();
       }
-
 
       // printf("left edge follow\n");
     }
-    // else if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < 10000)
+    // else if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < 15000)
     // {
     // }
     // else
@@ -633,26 +636,34 @@ void bhv_explorer()
   //  if(mydata->turn_around_mode_flag == 0)
   { // 通常
 
-      if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < (kilo_uid - 20 + 1) * 10000 )
-      {
+    if (fabs(angle_trim(180 + angle_acos) - angle_tes) > 1 || kilo_ticks < (kilo_uid - 20 + 1) * 15000)
+    {
 
-        follow_edge();
-      }
-      else if(mydata->is_past_food ==1)
-      {
-        go_straight();
+      follow_edge();
+    }
+    else if (mydata->is_past_food == 1 && find_Food() == 1)
+    {
+      mydata->straight_flag = 1;
+      // go_straight();
 
-        if ((find_Nest() || find_NewNode()))
-          set_bot_type(NEW_NODE);
-      }else{
-        follow_edge();
-      }
-
+      // if ((find_Nest() || find_NewNode()))
+      //   set_bot_type(NEW_NODE);
+    }
+    else
+    {
+      follow_edge();
+    }
   }
   // else{
   //   set_motors(0, 0);
 
   // }
+  if (mydata->straight_flag == 1)
+  {
+    go_straight();
+    if ((find_Nest() || find_NewNode()))
+      set_bot_type(NEW_NODE);
+  }
 }
 void loop()
 {
@@ -685,7 +696,7 @@ void loop()
   }
   else if (get_bot_type() == EXPLORER)
   {
-    if ((kilo_uid - 20) * 10000 < kilo_ticks)
+    if ((kilo_uid - 20) * 15000 < kilo_ticks)
       bhv_explorer();
   }
   setup_message();
@@ -717,7 +728,7 @@ int main(void)
 
 #ifdef SIMULATOR
 // provide a text string for the status bar, about this bot
-static char botinfo_buffer[10000];
+static char botinfo_buffer[15000];
 char *botinfo(void)
 {
   int n;
