@@ -23,18 +23,14 @@ typedef struct
   Neighbor_t neighbors[MAXN];
 
   int N_Neighbors;
-  uint8_t bot_type;              //{NEST, FOOD, NODE, EXPLORER}
-  uint8_t move_type;             //{STOP, FORWARD, LEFT, RIGHT}
-  uint8_t gradient;              //勾配 use NODE bot
-  uint8_t max_gradient;          //最大勾配 use NODE bot
-  Harfway_bot_t halfway_bot;     // 中間地点の角度 use EXPLORER bot
-  double body_angle;             //体の向き use EXPLORER bot
-  double vec[2];                 // rベクトル use EXPLORER bot
-  uint8_t turn_around_mode_flag; // 反対周りにするかどうか use EXPLOERE bot
-  uint8_t is_tail;               //末尾かどうか use NODE bot
-  int around_tick;
+  uint8_t bot_type;          //{NEST, FOOD, NODE, EXPLORER}
+  uint8_t move_type;         //{STOP, FORWARD, LEFT, RIGHT}
+  uint8_t gradient;          //勾配 use NODE bot
+  uint8_t max_gradient;      //最大勾配 use NODE bot
+  Harfway_bot_t halfway_bot; // 中間地点の角度 use EXPLORER bot
+  double body_angle;         //体の向き use EXPLORER bot
+  double pos[2];             // rベクトル use EXPLORER bot
   uint8_t is_past_food;
-  uint8_t straight_flag;
 
   message_t transmit_msg;
   char message_lock;
@@ -136,7 +132,6 @@ void process_message()
   mydata->neighbors[i].n_gradient = data[3];
   mydata->neighbors[i].n_bot_type = data[4];
   mydata->neighbors[i].max_gradient = data[5];
-  mydata->neighbors[i].n_is_tail = data[6];
 }
 
 /* Go through the list of neighbors, remove entries older than a threshold,
@@ -165,7 +160,6 @@ void setup_message(void)
   mydata->transmit_msg.data[3] = mydata->gradient;
   mydata->transmit_msg.data[4] = mydata->bot_type;
   mydata->transmit_msg.data[5] = mydata->max_gradient;
-  mydata->transmit_msg.data[6] = mydata->is_tail;
 
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
@@ -272,7 +266,6 @@ void setup()
     set_color(colorNum[9]); // white
     mydata->gradient = UINT8_MAX;
     mydata->max_gradient = 0;
-    mydata->is_tail = 0;
   }
   else if (kilo_uid == 19) // FOOD bot
   {
@@ -290,14 +283,52 @@ void setup()
     mydata->gradient = UINT8_MAX;
     mydata->max_gradient = 0;
     mydata->body_angle = 90.0;
-    mydata->vec[X] = 0.0;
-    mydata->vec[Y] = 0.0;
-    mydata->turn_around_mode_flag = 0;
+    mydata->pos[X] = 0.0;
+    mydata->pos[Y] = 0.0;
+    if (kilo_uid == 20)
+    {
+      mydata->pos[X] = 50.0;
+      mydata->pos[Y] = -9.0;
+    }
+    else if (kilo_uid == 21)
+    {
+      mydata->pos[X] = 0.0;
+      mydata->pos[Y] = 70.0;
+    }
+    else if (kilo_uid == 22)
+    {
+      mydata->pos[X] = 80.0;
+      mydata->pos[Y] = 0.0;
+    }
+    else if (kilo_uid == 23)
+    {
+      mydata->pos[X] = 80.0;
+      mydata->pos[Y] = 10.0;
+    }
+    else if (kilo_uid == 24)
+    {
+      mydata->pos[X] = 80.0;
+      mydata->pos[Y] = 50.0;
+    }
+    else if (kilo_uid == 25)
+    {
+      mydata->pos[X] = 80.0;
+      mydata->pos[Y] = 0.0;
+    }
+    else if (kilo_uid == 26)
+    {
+      mydata->pos[X] = 25.0;
+      mydata->pos[Y] = 10.0;
+    }
+    else if (kilo_uid == 27)
+    {
+      mydata->pos[X] = 10.0;
+      mydata->pos[Y] = 10.0;
+    }
   }
   mydata->message_lock = 0;
 
   mydata->N_Neighbors = 0;
-
   setup_message();
 }
 
@@ -325,32 +356,6 @@ uint8_t get_dist_by_ID(uint16_t bot)
     }
   }
   return dist;
-}
-uint8_t find_Tail()
-{
-  uint8_t i;
-  for (i = 0; i < mydata->N_Neighbors; i++)
-  {
-    if (mydata->neighbors[i].n_is_tail == 1)
-    {
-      return 1;
-    }
-  }
-  return 0;
-}
-uint8_t Past_Tail()
-{
-  uint8_t i;
-  for (i = 0; i < mydata->N_Neighbors; i++)
-  {
-    if (mydata->neighbors[i].n_bot_type == NEW_NODE)
-      continue;
-    if (mydata->neighbors[i].n_is_tail == 1)
-    {
-      return 1;
-    }
-  }
-  return 0;
 }
 
 uint8_t find_NewNode()
@@ -431,12 +436,12 @@ void update_harfway_info()
       continue;
     if (mydata->neighbors[i].max_gradient / 2 == mydata->neighbors[i].n_gradient)
     {
-      double halfway_acos = acos(mydata->vec[X] / sqrt(pow(mydata->vec[X], 2) + pow(mydata->vec[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
-      if (mydata->vec[Y] < 0)
+      double halfway_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
+      if (mydata->pos[Y] < 0)
         halfway_acos = 360.0 - halfway_acos;
       mydata->halfway_bot.angle = halfway_acos;
-      mydata->halfway_bot.pos[X] = mydata->vec[X];
-      mydata->halfway_bot.pos[Y] = mydata->vec[Y];
+      mydata->halfway_bot.pos[X] = mydata->pos[X];
+      mydata->halfway_bot.pos[Y] = mydata->pos[Y];
     }
   }
   return;
@@ -456,8 +461,8 @@ void follow_edge()
     if (mydata->body_angle > 360)
       mydata->body_angle = mydata->body_angle - 360.0;
 
-    mydata->vec[X] = mydata->vec[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    mydata->vec[Y] = mydata->vec[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
   }
 
   // if(find_nearest_N_dist() < desired_dist)
@@ -474,18 +479,18 @@ void follow_edge()
       mydata->body_angle = 360.0 + mydata->body_angle;
     if (mydata->body_angle > 360)
       mydata->body_angle = mydata->body_angle - 360.0;
-    mydata->vec[X] = mydata->vec[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    mydata->vec[Y] = mydata->vec[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
   }
 }
 uint8_t is_reverse()
 { // 0 : 通常, 1 : Reverse
 
-  if (mydata->vec[Y] > 0)
+  if (mydata->pos[Y] > 0)
   {
     if (mydata->halfway_bot.pos[Y] > 0)
     {
-      if (mydata->halfway_bot.pos[X] < mydata->vec[X])
+      if (mydata->halfway_bot.pos[X] < mydata->pos[X])
       {
         // printf("通常周り\n");
         // printf("[1]\n");
@@ -514,7 +519,7 @@ uint8_t is_reverse()
       }
     }
   }
-  else //   if (mydata->vec[Y] < 0)
+  else //   if (mydata->pos[Y] < 0)
   {
 
     if (mydata->halfway_bot.pos[Y] > 0)
@@ -536,7 +541,7 @@ uint8_t is_reverse()
     }
     else // if (mydata->halfway_bot.pos[Y] < 0)
     {
-      if (mydata->halfway_bot.pos[X] > mydata->vec[X])
+      if (mydata->halfway_bot.pos[X] > mydata->pos[X])
       {
         // printf("通常周り\n");
         // printf("[7]\n");
@@ -561,8 +566,8 @@ void rotate_move()
     mydata->body_angle = 360.0 + mydata->body_angle;
   if (mydata->body_angle > 360)
     mydata->body_angle = mydata->body_angle - 360.0;
-  mydata->vec[X] = mydata->vec[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-  mydata->vec[Y] = mydata->vec[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+  mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+  mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 
   // printf("uくるくｒ\n");
   set_motors(kilo_turn_left, 0);
@@ -574,7 +579,6 @@ void go_straight()
 }
 uint8_t is_there_higher_gradient()
 {
-
   uint8_t i;
   uint8_t flag = 0;
   for (i = 0; i < mydata->N_Neighbors; i++)
@@ -593,19 +597,6 @@ uint8_t is_there_higher_gradient()
   return flag;
 }
 
-uint8_t turn_arround_mode()
-{
-  if (find_Tail() == 1 && kilo_ticks > (kilo_uid - 20 + 1) * 15000)
-  {
-    double angle_acos = acos(mydata->vec[X] / sqrt(pow(mydata->vec[X], 2) + pow(mydata->vec[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
-
-    if (angle_acos < mydata->halfway_bot.angle)
-    {
-      return 1;
-    }
-  }
-  return 0;
-}
 void update_detect_food()
 {
   // if (find_Food())
@@ -638,15 +629,13 @@ void bhv_explorer()
   update_harfway_info();
   update_detect_food();
 
-  double angle_acos = acos(mydata->vec[X] / sqrt(pow(mydata->vec[X], 2) + pow(mydata->vec[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
-  if (mydata->vec[Y] < 0)
+  double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
+  if (mydata->pos[Y] < 0)
     angle_acos = 360.0 - angle_acos;
-
-  // printf("angle_tes : %f, angle_acos : %f, angle_trim : %f,  harfway_angle : %f, harfway_pos : (%f,%f)\n", angle_tes, angle_acos, angle_trim(180 + angle_acos), mydata->halfway_bot.angle, mydata->halfway_bot.pos[X], mydata->halfway_bot.pos[Y]);
 
   if (past_Food())
   {
-    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 1.0 && kilo_ticks > (kilo_uid - 20 + 1) * 5000)
+    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 1.0)
     {
       go_straight();
       if ((find_Nest() || find_NewNode()))
@@ -683,14 +672,6 @@ void loop()
 
     update_gradient();
     update_max_gradient();
-    if (is_there_higher_gradient() == 1)
-    {
-      mydata->is_tail = 0;
-    }
-    else
-    {
-      mydata->is_tail = 1;
-    }
   }
   else if (get_bot_type() == FOOD)
   {
@@ -737,7 +718,7 @@ char *botinfo(void)
   n = sprintf(p, "ID: %d ", kilo_uid);
   p += n;
 
-  n = sprintf(p, "Ns: %d, dist: %d, Gradient : %d, max_gradient : %d, is_tail : %d\n ", mydata->N_Neighbors, find_nearest_N_dist(), mydata->gradient, mydata->max_gradient, mydata->is_tail);
+  n = sprintf(p, "Ns: %d, dist: %d, Gradient : %d, max_gradient : %d\n ", mydata->N_Neighbors, find_nearest_N_dist(), mydata->gradient, mydata->max_gradient);
   p += n;
 
   return botinfo_buffer;
