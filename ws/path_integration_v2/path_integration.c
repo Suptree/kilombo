@@ -285,46 +285,46 @@ void setup()
     mydata->body_angle = 90.0;
     mydata->pos[X] = 0.0;
     mydata->pos[Y] = 0.0;
-    if (kilo_uid == 20)
-    {
-      mydata->pos[X] = 50.0;
-      mydata->pos[Y] = -9.0;
-    }
-    else if (kilo_uid == 21)
-    {
-      mydata->pos[X] = 0.0;
-      mydata->pos[Y] = 70.0;
-    }
-    else if (kilo_uid == 22)
-    {
-      mydata->pos[X] = 80.0;
-      mydata->pos[Y] = 0.0;
-    }
-    else if (kilo_uid == 23)
-    {
-      mydata->pos[X] = 80.0;
-      mydata->pos[Y] = 10.0;
-    }
-    else if (kilo_uid == 24)
-    {
-      mydata->pos[X] = 80.0;
-      mydata->pos[Y] = 50.0;
-    }
-    else if (kilo_uid == 25)
-    {
-      mydata->pos[X] = 80.0;
-      mydata->pos[Y] = 0.0;
-    }
-    else if (kilo_uid == 26)
-    {
-      mydata->pos[X] = 25.0;
-      mydata->pos[Y] = 10.0;
-    }
-    else if (kilo_uid == 27)
-    {
-      mydata->pos[X] = 10.0;
-      mydata->pos[Y] = 10.0;
-    }
+    // if (kilo_uid == 20)
+    // {
+    //   mydata->pos[X] = 50.0;
+    //   mydata->pos[Y] = -9.0;
+    // }
+    // else if (kilo_uid == 21)
+    // {
+    //   mydata->pos[X] = 0.0;
+    //   mydata->pos[Y] = 70.0;
+    // }
+    // else if (kilo_uid == 22)
+    // {
+    //   mydata->pos[X] = 80.0;
+    //   mydata->pos[Y] = 0.0;
+    // }
+    // else if (kilo_uid == 23)
+    // {
+    //   mydata->pos[X] = 80.0;
+    //   mydata->pos[Y] = 10.0;
+    // }
+    // else if (kilo_uid == 24)
+    // {
+    //   mydata->pos[X] = 80.0;
+    //   mydata->pos[Y] = 50.0;
+    // }
+    // else if (kilo_uid == 25)
+    // {
+    //   mydata->pos[X] = 80.0;
+    //   mydata->pos[Y] = 0.0;
+    // }
+    // else if (kilo_uid == 26)
+    // {
+    //   mydata->pos[X] = 25.0;
+    //   mydata->pos[Y] = 10.0;
+    // }
+    // else if (kilo_uid == 27)
+    // {
+    //   mydata->pos[X] = 10.0;
+    //   mydata->pos[Y] = 10.0;
+    // }
   }
   mydata->message_lock = 0;
 
