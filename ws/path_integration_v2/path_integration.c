@@ -31,6 +31,8 @@ typedef struct
   double body_angle;         //体の向き use EXPLORER bot
   double pos[2];             // rベクトル use EXPLORER bot
   uint8_t is_past_food;
+  double start_pos[2];
+  uint8_t is_detected_nest;
 
   message_t transmit_msg;
   char message_lock;
@@ -327,7 +329,7 @@ void setup()
     // }
   }
   mydata->message_lock = 0;
-
+  mydata->is_detected_nest = 0;
   mydata->N_Neighbors = 0;
   setup_message();
 }
@@ -395,6 +397,19 @@ uint8_t find_Food()
   }
   return 0;
 }
+uint8_t find_Explorer()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == EXPLORER)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 uint8_t find_Only_Food()
 {
   uint8_t i;
@@ -403,6 +418,20 @@ uint8_t find_Only_Food()
     if (mydata->neighbors[i].n_bot_type == NODE)
       return 0;
     if (mydata->neighbors[i].n_bot_type == FOOD)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+uint8_t find_Only_Nest()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == NODE)
+      return 0;
+    if (mydata->neighbors[i].n_bot_type == NEST)
     {
       return 1;
     }
@@ -577,6 +606,10 @@ void go_straight()
 {
   set_motors(kilo_turn_left, kilo_turn_right);
 }
+void stop_straight()
+{
+  set_motors(0, 0);
+}
 uint8_t is_there_higher_gradient()
 {
   uint8_t i;
@@ -596,7 +629,21 @@ uint8_t is_there_higher_gradient()
   }
   return flag;
 }
+void update_detect_nest()
+{
+  if (mydata->is_detected_nest == 1)
+  {
+    return;
+  }
+  if (find_Only_Nest())
+  {
+    // if(find_Nest()){
 
+    mydata->is_detected_nest = 1;
+    mydata->pos[X] = -mydata->start_pos[X];
+    mydata->pos[Y] = -mydata->start_pos[Y];
+  }
+}
 void update_detect_food()
 {
   // if (find_Food())
@@ -628,6 +675,8 @@ void bhv_explorer()
 {
   update_harfway_info();
   update_detect_food();
+  update_detect_nest();
+  printf("pos(x, y) = (%f, %f)\n", mydata->pos[X], mydata->pos[Y]);
 
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
   if (mydata->pos[Y] < 0)
@@ -637,7 +686,14 @@ void bhv_explorer()
   {
     if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 1.0)
     {
-      go_straight();
+      if (find_Explorer())
+      {
+        stop_straight();
+      }
+      else
+      {
+        go_straight();
+      }
       if ((find_Nest() || find_NewNode()))
         set_bot_type(NEW_NODE);
     }
@@ -678,7 +734,7 @@ void loop()
   }
   else if (get_bot_type() == EXPLORER)
   {
-    if ((kilo_uid - 20) * 15000 < kilo_ticks)
+    if ((kilo_uid - 20) * 5000 < kilo_ticks)
       bhv_explorer();
   }
   setup_message();
