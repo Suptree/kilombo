@@ -1,5 +1,5 @@
 /* Kilobot Edge following demo
- * 
+ *
  * Ivica Slavkov, Fredrik Jansson  2015
  */
 
@@ -23,17 +23,17 @@ typedef struct
   Neighbor_t neighbors[MAXN];
 
   int N_Neighbors;
-  uint8_t bot_type;  //{NEST, FOOD, NODE, EXPLORER, DETECTEDNODE, LOSTCHAIN}
-  uint8_t bot_state; //{WAIT, LISTEN, MOVE}
-  uint8_t move_type; //{STOP, FORWARD, LEFT, RIGHT}
+  uint8_t bot_type;   //{NEST, FOOD, NODE, EXPLORER, DETECTEDNODE, LOSTCHAIN}
+  uint8_t bot_state;  //{WAIT, LISTEN, MOVE}
+  uint8_t move_type;  //{STOP, FORWARD, LEFT, RIGHT}
   uint8_t dist_state; // {TOOCLOSEDIST, NORMALDIST}
   uint8_t gradient;
   uint8_t current_robot_chain_ID;
   uint8_t previous_robot_chain_ID;
+  uint8_t detected_robot_chain_ID;
   uint8_t E_initial;
   int E_value;
   int pre_distance;
-
 
   message_t transmit_msg;
   char message_lock;
@@ -46,57 +46,57 @@ typedef struct
 REGISTER_USERDATA(MyUserdata)
 // declare constants
 static const uint8_t TOOCLOSE_DISTANCE = 40; // 40 mm
-static const uint8_t DESIRED_DISTANCE = 60; // 60 mm
-static const uint8_t ORBIT_R = 40; // 40 mm
+static const uint8_t DESIRED_DISTANCE = 60;  // 60 mm
+static const uint8_t ORBIT_R = 40;           // 40 mm
 
 // static const uint8_t TOOCLOSE_DISTANCE = 40; // 40 mm
 // static const uint8_t DESIRED_DISTANCE = 60; // 60 mm
 // static const uint8_t ORBIT_R = 40; // 40 mm
 #ifdef SIMULATOR
-#include <stdio.h>    // for printf
+#include <stdio.h> // for printf
 #else
-#define DEBUG         // for printf to serial port
+#define DEBUG // for printf to serial port
 #include "debug.h"
 #endif
 void smooth_set_motors(uint8_t ccw, uint8_t cw)
 {
-  // OCR2A = ccw;  OCR2B = cw;  
-#ifdef KILOBOT 
+  // OCR2A = ccw;  OCR2B = cw;
+#ifdef KILOBOT
   uint8_t l = 0, r = 0;
   if (ccw && !OCR2A) // we want left motor on, and it's off
     l = 0xff;
-  if (cw && !OCR2B)  // we want right motor on, and it's off
+  if (cw && !OCR2B) // we want right motor on, and it's off
     r = 0xff;
-  if (l || r)        // at least one motor needs spin-up
-    {
-      set_motors(l, r);
-      delay(15);
-    }
+  if (l || r) // at least one motor needs spin-up
+  {
+    set_motors(l, r);
+    delay(15);
+  }
 #endif
   // spin-up is done, now we set the real value
   set_motors(ccw, cw);
 }
 
-
 uint8_t colorNum[] = {
-  RGB(0,0,0),  //0 - off
-  RGB(1,0,0),  //1 - red
-  RGB(0,1,0),  //2 - green
-  RGB(0,0,1),  //3 - blue
-  RGB(1,1,0),  //4 - yellow
-  RGB(0,1,1),  //5 - cyan
-  RGB(1,0,1),  //6 - purple
-  RGB(2,1,0),  //7  - orange
-  RGB(1,1,1),  //8  - white
-  RGB(3,3,3)   //9  - bright white
+    RGB(0, 0, 0), // 0 - off
+    RGB(1, 0, 0), // 1 - red
+    RGB(0, 1, 0), // 2 - green
+    RGB(0, 0, 1), // 3 - blue
+    RGB(1, 1, 0), // 4 - yellow
+    RGB(0, 1, 1), // 5 - cyan
+    RGB(1, 0, 1), // 6 - purple
+    RGB(2, 1, 0), // 7  - orange
+    RGB(1, 1, 1), // 8  - white
+    RGB(3, 3, 3)  // 9  - bright white
 };
 
 // message rx callback function. Pushes message to ring buffer.
-void rxbuffer_push(message_t *msg, distance_measurement_t *dist) {
-    received_message_t *rmsg = &RB_back();
-    rmsg->msg = *msg;
-    rmsg->dist = *dist;
-    RB_pushback();
+void rxbuffer_push(message_t *msg, distance_measurement_t *dist)
+{
+  received_message_t *rmsg = &RB_back();
+  rmsg->msg = *msg;
+  rmsg->dist = *dist;
+  RB_pushback();
 }
 
 message_t *message_tx()
@@ -114,29 +114,29 @@ int get_bot_type(void)
 {
   return mydata->bot_type;
 }
-char* get_bot_type_str(int type)
+char *get_bot_type_str(int type)
 {
-  if(type == NEST)
+  if (type == NEST)
   {
     return "NEST";
   }
-  else if(type == FOOD)
+  else if (type == FOOD)
   {
     return "FOOD";
   }
-  else if(type == NODE)
+  else if (type == NODE)
   {
     return "NODE";
   }
-  else if(type == EXPLORER)
+  else if (type == EXPLORER)
   {
     return "EXPLORER";
   }
-  else if(type == DETECTEDNODE)
+  else if (type == DETECTEDNODE)
   {
     return "DETECTEDNODE";
   }
-  else if(type == LOSTCHAIN)
+  else if (type == LOSTCHAIN)
   {
     return "LOSTCHAIN";
   }
@@ -154,17 +154,17 @@ int get_bot_state(void)
 {
   return mydata->bot_state;
 }
-char* get_bot_state_str(int state)
+char *get_bot_state_str(int state)
 {
-  if(state == WAIT)
+  if (state == WAIT)
   {
     return "WAIT";
   }
-  else if(state == LISTEN)
+  else if (state == LISTEN)
   {
     return "LISTEN";
   }
-  else if(state == MOVE)
+  else if (state == MOVE)
   {
     return "MOVE";
   }
@@ -172,7 +172,6 @@ char* get_bot_state_str(int state)
   {
     return "BOT_STATE_UNKNOWN";
   }
-
 }
 
 void set_dist_state(int state)
@@ -183,13 +182,13 @@ int get_dist_state(void)
 {
   return mydata->dist_state;
 }
-char* get_dist_state_str(int state)
+char *get_dist_state_str(int state)
 {
-  if(state == TOOCLOSEDIST)
+  if (state == TOOCLOSEDIST)
   {
     return "TOOCLOSEDIST";
   }
-  else if(state == NORMALDIST)
+  else if (state == NORMALDIST)
   {
     return "NORMALDIST";
   }
@@ -207,21 +206,21 @@ int get_move_type(void)
 {
   return mydata->move_type;
 }
-char* get_move_type_str(int type)
+char *get_move_type_str(int type)
 {
-  if(type == STOP)
+  if (type == STOP)
   {
     return "STOP";
   }
-  else if(type == LEFT)
+  else if (type == LEFT)
   {
     return "LEFT";
   }
-  else if(type == RIGHT)
+  else if (type == RIGHT)
   {
     return "RIGHT";
   }
-  else if(type == FORWARD)
+  else if (type == FORWARD)
   {
     return "FORWARD";
   }
@@ -248,14 +247,15 @@ void process_message()
   // search the neighbor list by ID
   for (i = 0; i < mydata->N_Neighbors; i++)
     if (mydata->neighbors[i].ID == ID)
-      {// found it
+    { // found it
       break;
-      }
+    }
 
-  if (i == mydata->N_Neighbors){  // this neighbor is not in list
-    if (mydata->N_Neighbors < MAXN-1) // if we have too many neighbors,
-      mydata->N_Neighbors++;          // we overwrite the last entry
-                                      // sloppy but better than overflow
+  if (i == mydata->N_Neighbors)
+  {                                     // this neighbor is not in list
+    if (mydata->N_Neighbors < MAXN - 1) // if we have too many neighbors,
+      mydata->N_Neighbors++;            // we overwrite the last entry
+                                        // sloppy but better than overflow
   }
 
   // i now points to where this message should be stored
@@ -267,6 +267,7 @@ void process_message()
   mydata->neighbors[i].n_bot_type = data[4];
   mydata->neighbors[i].n_gradient = data[5];
   mydata->neighbors[i].n_current_robot_chain_ID = data[6];
+  mydata->neighbors[i].n_detected_robot_chain_ID = data[7];
 }
 
 /* Go through the list of neighbors, remove entries older than a threshold,
@@ -276,18 +277,18 @@ void purgeNeighbors(void)
 {
   int8_t i;
 
-  for (i = mydata->N_Neighbors-1; i >= 0; i--)
-    if (kilo_ticks - mydata->neighbors[i].timestamp  > 64) //32 ticks = 1 s
-      { //this one is too old.
-  mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors-1];
-  //replace it by the last entry
-  mydata->N_Neighbors--;
-      }
+  for (i = mydata->N_Neighbors - 1; i >= 0; i--)
+    if (kilo_ticks - mydata->neighbors[i].timestamp > 64) // 32 ticks = 1 s
+    {                                                     // this one is too old.
+      mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors - 1];
+      // replace it by the last entry
+      mydata->N_Neighbors--;
+    }
 }
 
 void setup_message(void)
 {
-  mydata->message_lock = 1;  //don't transmit while we are forming the message
+  mydata->message_lock = 1; // don't transmit while we are forming the message
   mydata->transmit_msg.type = NORMAL;
   mydata->transmit_msg.data[0] = kilo_uid & 0xff;     // 0 low  ID
   mydata->transmit_msg.data[1] = kilo_uid >> 8;       // 1 high ID
@@ -296,75 +297,81 @@ void setup_message(void)
   mydata->transmit_msg.data[4] = get_bot_type();
   mydata->transmit_msg.data[5] = mydata->gradient;
   mydata->transmit_msg.data[6] = mydata->current_robot_chain_ID;
+  mydata->transmit_msg.data[7] = mydata->detected_robot_chain_ID;
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////settup
 void setup()
 {
-  #ifdef DEBUG_CSV
+#ifdef DEBUG_CSV
   int i = 0;
-  for(i = 0; i < 20; i++) {
+  for (i = 0; i < 20; i++)
+  {
     FILE *fp;
- 
+
     char fname[1000];
     sprintf(fname, "%d", i);
     char tailstr[] = "_self.csv";
     strcat(fname, tailstr);
-    fp = fopen( fname, "w" );
-    if( fp == NULL ){
+    fp = fopen(fname, "w");
+    if (fp == NULL)
+    {
       return;
     }
-   fpbox[i] = fp;
-
+    fpbox[i] = fp;
   }
-  fprintf(fpbox[kilo_uid],"kilo_tick,bot_type,bot_state,move_type,dist_state,neighbors_count\n");
-  for(i = 0; i < 20; i++) {
+  fprintf(fpbox[kilo_uid], "kilo_tick,bot_type,bot_state,move_type,dist_state,neighbors_count\n");
+  for (i = 0; i < 20; i++)
+  {
     FILE *fp;
- 
+
     char fname[1000];
     sprintf(fname, "%d", i);
     char tailstr[] = "_neighbors.csv";
     strcat(fname, tailstr);
-    fp = fopen( fname, "w" );
-    if( fp == NULL ){
+    fp = fopen(fname, "w");
+    if (fp == NULL)
+    {
       return;
     }
-   fpneighbors[i] = fp;
-
+    fpneighbors[i] = fp;
   }
-  fprintf(fpneighbors[kilo_uid],"kilo_tick,neighbor_ID,neighbor_dist,neighbor_bot_type,neighbor_bot_state,receive_timestamp\n");
-  #endif
-  rand_seed(kilo_uid + 1); //seed the random number generator
+  fprintf(fpneighbors[kilo_uid], "kilo_tick,neighbor_ID,neighbor_dist,neighbor_bot_type,neighbor_bot_state,receive_timestamp\n");
+#endif
+  rand_seed(kilo_uid + 1); // seed the random number generator
 
-    mydata->previous_robot_chain_ID = 100;
-    mydata->current_robot_chain_ID = 0;
-    mydata->E_initial = 0;
-    mydata->E_value = 0;
+  mydata->previous_robot_chain_ID = 100;
+  mydata->current_robot_chain_ID = 0;
+  mydata->E_initial = 0;
+  mydata->E_value = 0;
+  mydata->detected_robot_chain_ID = 0;
 
-  if(kilo_uid == 0){
+  if (kilo_uid == 0)
+  {
     set_bot_type(NEST);
     set_move_type(STOP);
-    set_bot_state(WAIT); 
+    set_bot_state(WAIT);
     set_dist_state(-1);
 
     mydata->gradient = 0;
   }
-  else if (kilo_uid == 1){
+  else if (kilo_uid == 1)
+  {
     set_bot_type(FOOD);
     set_move_type(STOP);
-    set_bot_state(WAIT); 
+    set_bot_state(WAIT);
     set_dist_state(-1);
 
     mydata->gradient = UINT8_MAX;
   }
-  else{
+  else
+  {
     set_bot_type(EXPLORER);
     set_move_type(STOP);
-    set_bot_state(LISTEN); 
+    set_bot_state(LISTEN);
     set_dist_state(TOOCLOSEDIST);
     mydata->gradient = UINT8_MAX;
-
   }
   mydata->pre_distance = 0;
   mydata->message_lock = 0;
@@ -375,10 +382,10 @@ void setup()
 void receive_inputs()
 {
   while (!RB_empty())
-    {
-      process_message();
-      RB_popfront();
-    }
+  {
+    process_message();
+    RB_popfront();
+  }
   purgeNeighbors();
 }
 
@@ -386,34 +393,48 @@ uint8_t get_dist_by_ID(uint16_t bot)
 {
   uint8_t i;
   uint8_t dist = 255;
-  
-  for(i = 0; i < mydata->N_Neighbors; i++)
-    {
-      if(mydata->neighbors[i].ID == bot)
+
+  for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    dist = mydata->neighbors[i].dist;
-    break;
-  }
+    if (mydata->neighbors[i].ID == bot)
+    {
+      dist = mydata->neighbors[i].dist;
+      break;
     }
+  }
   return dist;
 }
-int find_node(){
+int find_node()
+{
 
   uint8_t i;
-  for(i = 0; i < mydata->N_Neighbors; i++)
-    {
-      if(mydata->neighbors[i].n_bot_type == NODE) return 1;
-    }
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == NODE)
+      return 1;
+  }
+  return 0;
+}
+int find_detected_node()
+{
+
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == DETECTEDNODE && mydata->neighbors[i].n_current_robot_chain_ID == mydata->current_robot_chain_ID)
+      return 1;
+  }
   return 0;
 }
 int find_nest() // 近くにnestがいたら1、いなかったら０を返す
 {
   uint8_t i;
 
-  for(i = 0; i < mydata->N_Neighbors; i++)
-    {
-      if(mydata->neighbors[i].ID == 0) return 1;
-    }
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].ID == 0)
+      return 1;
+  }
   return 0;
 }
 
@@ -421,10 +442,11 @@ int find_food()
 {
 
   uint8_t i;
-  for(i = 0; i < mydata->N_Neighbors; i++)
-    {
-      if(mydata->neighbors[i].ID == 1) return 1;
-    }
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].ID == 1)
+      return 1;
+  }
   return 0;
 }
 
@@ -432,9 +454,10 @@ uint8_t find_node_num()
 {
   uint8_t i;
   uint8_t node_num = 0;
-  for(i = 0; i < mydata->N_Neighbors; i++)
+  for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if(mydata->neighbors[i].n_bot_type == NODE ) node_num++;
+    if (mydata->neighbors[i].n_bot_type == NODE)
+      node_num++;
   }
   return node_num;
 }
@@ -443,9 +466,9 @@ uint8_t find_nearest_N_dist()
   uint8_t i;
   uint8_t dist = 100;
 
-  for(i = 0; i < mydata->N_Neighbors; i++)
+  for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if(mydata->neighbors[i].dist < dist)
+    if (mydata->neighbors[i].dist < dist)
     {
       dist = mydata->neighbors[i].dist;
     }
@@ -458,10 +481,11 @@ uint8_t find_nearest_Node_dist()
   uint8_t i;
   uint8_t dist = 100;
 
-  for(i = 0; i < mydata->N_Neighbors; i++)
+  for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if(mydata->neighbors[i].n_bot_type == NODE || mydata->neighbors[i].n_bot_type == NEST){
-      if(mydata->neighbors[i].dist < dist )
+    if (mydata->neighbors[i].n_bot_type == NODE || mydata->neighbors[i].n_bot_type == NEST)
+    {
+      if (mydata->neighbors[i].dist < dist)
       {
         dist = mydata->neighbors[i].dist;
       }
@@ -470,147 +494,198 @@ uint8_t find_nearest_Node_dist()
   return dist;
 }
 
-uint8_t get_neibors_max_gradient() {
+uint8_t get_neibors_max_gradient()
+{
 
   uint8_t i;
   uint8_t max_gradient = 0;
-  for(i = 0; i < mydata->N_Neighbors; i++)
+  for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if(mydata->neighbors[i].n_gradient > max_gradient) {
+    if (mydata->neighbors[i].n_gradient > max_gradient)
+    {
       max_gradient = mydata->neighbors[i].n_gradient;
     }
   }
   return max_gradient;
 }
 
-uint8_t get_neibors_min_gradient() {
+uint8_t get_neibors_min_gradient()
+{
 
   uint8_t i;
   uint8_t min_gradient = UINT8_MAX;
-  for(i = 0; i < mydata->N_Neighbors; i++)
+  for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if(mydata->neighbors[i].n_gradient < min_gradient) {
+    if (mydata->neighbors[i].n_gradient < min_gradient)
+    {
       min_gradient = mydata->neighbors[i].n_gradient;
     }
   }
   return min_gradient;
 }
 
-
-void update_gradient(){
+void update_gradient()
+{
   uint8_t i;
   uint8_t min_gradient = UINT8_MAX;
 
-  for(i = 0; i < mydata->N_Neighbors; i++)
+  for (i = 0; i < mydata->N_Neighbors; i++)
   {
-	  if(mydata->neighbors[i].n_gradient == UINT8_MAX) continue;
-    if(mydata->neighbors[i].n_bot_type == EXPLORER ) continue;
-    if(mydata->neighbors[i].n_gradient < min_gradient)
+    if (mydata->neighbors[i].n_gradient == UINT8_MAX)
+      continue;
+    if (mydata->neighbors[i].n_bot_type == EXPLORER)
+      continue;
+    if (mydata->neighbors[i].n_gradient < min_gradient)
     {
       min_gradient = mydata->neighbors[i].n_gradient;
     }
   }
-  if(min_gradient == UINT8_MAX) return;
+  if (min_gradient == UINT8_MAX)
+    return;
 
   mydata->gradient = min_gradient + 1;
 
   return;
-
 }
 
-void update_current_chain_ID() {
+void update_current_chain_ID()
+{
   uint8_t i;
-  for(i = 0; i < mydata->N_Neighbors; i++){
-    if(mydata->neighbors[i].n_bot_type == NODE && mydata->gradient > mydata->neighbors[i].n_gradient) {
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == NODE && mydata->gradient > mydata->neighbors[i].n_gradient)
+    {
       mydata->current_robot_chain_ID = mydata->neighbors[i].n_current_robot_chain_ID;
     }
   }
 }
-uint8_t is_there_explorer(){
+uint8_t is_there_explorer()
+{
 
   uint8_t i;
   uint8_t flag = 0;
-  for(i = 0; i < mydata->N_Neighbors; i++){
-    if( mydata->neighbors[i].n_bot_type == EXPLORER) {
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == EXPLORER)
+    {
       flag = 1;
     }
   }
   return flag;
 }
-uint8_t is_there_node(){
+uint8_t is_there_node()
+{
 
   uint8_t i;
   uint8_t flag = 0;
-  for(i = 0; i < mydata->N_Neighbors; i++){
-    if( mydata->neighbors[i].n_bot_type == NODE || mydata->neighbors[i].n_bot_type == NEST) {
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == NODE || mydata->neighbors[i].n_bot_type == NEST)
+    {
       flag = 1;
     }
   }
   return flag;
 }
 
-uint8_t is_there_higher_gradient(){
+uint8_t is_there_higher_gradient()
+{
 
   uint8_t i;
   uint8_t flag = 0;
-  for(i = 0; i < mydata->N_Neighbors; i++){
-    if(mydata->neighbors[i].n_gradient > mydata->gradient && mydata->neighbors[i].n_bot_type == NODE) {
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_gradient > mydata->gradient && mydata->neighbors[i].n_bot_type == NODE)
+    {
       flag = 1;
     }
   }
   return flag;
 }
-uint8_t is_there_higher_gradient_chain(){
+uint8_t is_there_higher_gradient_chain()
+{
 
   uint8_t i;
   uint8_t flag = 0;
-  for(i = 0; i < mydata->N_Neighbors; i++){
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
 
-    if(mydata->neighbors[i].n_gradient > mydata->gradient){
-      if (mydata->neighbors[i].n_bot_type == NEST || mydata->neighbors[i].n_bot_type == NODE ) {
-          flag = 1;
-          return flag;
+    if (mydata->neighbors[i].n_gradient > mydata->gradient)
+    {
+      if (mydata->neighbors[i].n_bot_type == NEST || mydata->neighbors[i].n_bot_type == NODE)
+      {
+        flag = 1;
+        return flag;
       }
-    } 
+    }
   }
   return flag;
 }
-int calculate_E_value(uint8_t g) {
+uint8_t is_detected_current_robot_chain()
+{
+  uint8_t i;
+  uint8_t flag = 0;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if(mydata->neighbors[i].n_detected_robot_chain_ID == 0) continue;
+
+    if(mydata->current_robot_chain_ID == mydata->neighbors[i].n_detected_robot_chain_ID){
+      return 1;
+    }
+
+  }
+  return 0;
+}
+int calculate_E_value(uint8_t g)
+{
   return g * 1000;
 }
-void orbit_normal() 
+void orbit_normal()
 {
-  if (find_nearest_Node_dist() < TOOCLOSE_DISTANCE) {
+  if (find_nearest_Node_dist() < TOOCLOSE_DISTANCE)
+  {
     set_dist_state(TOOCLOSEDIST);
-  } else {
-    if (find_nearest_Node_dist() < DESIRED_DISTANCE) {
+  }
+  else
+  {
+    if (find_nearest_Node_dist() < DESIRED_DISTANCE)
+    {
       set_motors(kilo_turn_left, 0);
       set_move_type(LEFT);
-    } else {
+    }
+    else
+    {
       set_motors(0, kilo_turn_right);
       set_move_type(RIGHT);
     }
   }
 }
 
-void orbit_tooclose() {
-  if (find_nearest_Node_dist() >= DESIRED_DISTANCE){
+void orbit_tooclose()
+{
+  if (find_nearest_Node_dist() >= DESIRED_DISTANCE)
+  {
     set_dist_state(NORMALDIST);
-  }else{
-    set_motors(kilo_turn_left,kilo_turn_right);
+  }
+  else
+  {
+    set_motors(kilo_turn_left, kilo_turn_right);
     set_move_type(FORWARD);
   }
 }
 
 void follow_edge()
 {
-  if(mydata->dist_state == NORMALDIST){
+  if (mydata->dist_state == NORMALDIST)
+  {
     orbit_normal();
     return;
-  }else{
+  }
+  else
+  {
     orbit_tooclose();
     return;
-  } 
+  }
   // uint8_t current = find_nearest_Node_dist();
 
   // if (current > ORBIT_R) {
@@ -635,55 +710,69 @@ void follow_edge()
   //   }
   // }
   // mydata->pre_distance = current;
-   
 }
-void robot_node_behavior(){ /////////////////////////////////////////////////////// NODE ////////////////////////////////
-  if (mydata->bot_type == DETECTEDNODE) { // FOODを見つけたrobotは静止. (実験終了)
-    set_color(RGB(0,3,3));
+void robot_node_behavior()
+{ /////////////////////////////////////////////////////// NODE ////////////////////////////////
+  if (mydata->bot_type == DETECTEDNODE)
+  { // FOODを見つけたrobotは静止. (実験終了)
+    set_color(RGB(0, 3, 3));
     set_motors(0, 0);
     set_move_type(STOP);
     return;
-  } else { // Node状態のrobotは自身の勾配に基づいて色を変化させる.
+  }
+  else
+  { // Node状態のrobotは自身の勾配に基づいて色を変化させる.
     set_color(colorNum[mydata->gradient % 10]);
     set_motors(0, 0);
     set_move_type(STOP);
   }
-  
-  if(mydata->gradient == 1){ // 勾配が1のときは自身をRobot_Chainのi開始Robotということを認識させる
+
+  if (mydata->gradient == 1)
+  { // 勾配が1のときは自身をRobot_Chainのi開始Robotということを認識させる
     mydata->current_robot_chain_ID = kilo_uid;
-  }else if(mydata->gradient > 1){
+  }
+  else if (mydata->gradient > 1)
+  {
     update_current_chain_ID();
   }
 
-  if(is_there_higher_gradient() == 0) {// 最後尾だよ
-    if(mydata->E_initial == 0) { // 初めて末端
+  if (is_there_higher_gradient() == 0)
+  { // 最後尾だよ
+    if (mydata->E_initial == 0)
+    { // 初めて末端
       mydata->E_value = calculate_E_value(mydata->gradient);
-      mydata->E_initial =1;
-    }else if(is_there_explorer() == 0) { // 既に末端 // 周りにexplorerがいないとき
+      mydata->E_initial = 1;
+    }
+    else if (is_there_explorer() == 0)
+    { // 既に末端 // 周りにexplorerがいないとき
       mydata->E_value--;
 
-      if(mydata->E_value < 0) {
+      if (mydata->E_value < 0)
+      {
         mydata->previous_robot_chain_ID = mydata->current_robot_chain_ID;
         set_bot_type(EXPLORER);
         mydata->E_initial = 0;
         mydata->E_value = 0;
       }
     }
-  }else if(mydata->E_initial == 1){
+  }
+  else if (mydata->E_initial == 1)
+  {
     mydata->E_initial = 0;
   }
 
   set_motors(0, 0);
   set_move_type(STOP);
 }
-void robot_explorer_behavior(){ //////////////////////////////////// EXPLORER //////////////////////////////////////
+void robot_explorer_behavior()
+{ //////////////////////////////////// EXPLORER //////////////////////////////////////
 
-  
-  set_color(RGB(0,0,3));
+  set_color(RGB(0, 0, 3));
 
-
-  if(mydata->N_Neighbors == 1 ){
-    if(mydata->neighbors[0].N_Neighbors == 1 && mydata->neighbors[0].n_bot_type != NEST) {
+  if (mydata->N_Neighbors == 1)
+  {
+    if (mydata->neighbors[0].N_Neighbors == 1 && mydata->neighbors[0].n_bot_type != NEST)
+    {
       set_bot_type(LOSTCHAIN);
       set_color(colorNum[9]);
       set_motors(0, 0);
@@ -691,7 +780,9 @@ void robot_explorer_behavior(){ //////////////////////////////////// EXPLORER //
 
       return;
     }
-  }else if(mydata->N_Neighbors == 0 && kilo_ticks > 100) {
+  }
+  else if (mydata->N_Neighbors == 0 && kilo_ticks > 100)
+  {
     set_bot_type(LOSTCHAIN);
 
     set_color(colorNum[9]);
@@ -699,103 +790,113 @@ void robot_explorer_behavior(){ //////////////////////////////////// EXPLORER //
     set_move_type(STOP);
 
     return;
-
   }
 
-
   //// Extention Mechanism
-  if(is_there_higher_gradient_chain() == 0 ){ 
+  if (is_there_higher_gradient_chain() == 0)
+  {
     // if(find_nearest_Node_dist() > ORBIT_R) {
 
-    if(find_nearest_Node_dist() > ORBIT_R) {
+    if (find_nearest_Node_dist() > ORBIT_R)
+    {
       uint8_t i;
       uint8_t next_chain_id = 100;
-      for(i = 0; i < mydata->N_Neighbors; i++){
-        if(mydata->neighbors[i].n_bot_type == NODE || mydata->neighbors[i].n_bot_type == NEST)
-        if( mydata->gradient > mydata->neighbors[i].n_gradient) {
-          next_chain_id = mydata->neighbors[i].n_current_robot_chain_ID;
-        }
+      for (i = 0; i < mydata->N_Neighbors; i++)
+      {
+        if (mydata->neighbors[i].n_bot_type == NODE || mydata->neighbors[i].n_bot_type == NEST)
+          if (mydata->gradient > mydata->neighbors[i].n_gradient)
+          {
+            next_chain_id = mydata->neighbors[i].n_current_robot_chain_ID;
+          }
       }
-      if(next_chain_id == 0) {
+      if (next_chain_id == 0)
+      {
         next_chain_id = kilo_uid;
       }
 
-      if(mydata->previous_robot_chain_ID != next_chain_id) {
+      if (mydata->previous_robot_chain_ID != next_chain_id)
+      {
 
         set_bot_type(NODE);
         return;
       }
-
-
     }
   }
 
   follow_edge();
-
-  
-
 }
-void robot_lost_chain_behavior(){ /////////////////////////////////////////////////////// LOST CHAIN ///////////////////////////
+void robot_lost_chain_behavior()
+{ /////////////////////////////////////////////////////// LOST CHAIN ///////////////////////////
   set_color(colorNum[9]);
   set_motors(0, 0);
   set_move_type(STOP);
 
-   if(is_there_node() == 1) //近くにノードがいるとき
+  if (is_there_node() == 1) //近くにノードがいるとき
   {
     set_bot_type(NODE);
   }
-
 }
 
 void loop() //////////////////////////////////////////////// LOOP ////////////////////////////////////////
 {
-  //receive messages
+  // receive messages
   receive_inputs();
-  if(kilo_ticks > 100) {
+  if (kilo_ticks > 100)
+  {
 
-    if(kilo_uid == 0) // nest
+    if (kilo_uid == 0) // nest
     {
       set_robot_nest_color();
       robot_nest_behavior();
     }
-    else if(kilo_uid == 1) // food
+    else if (kilo_uid == 1) // food
     {
       set_robot_food_color();
       robot_food_behavior();
     }
     else
     {
-      if(find_food() == 1) {
+      if (find_food() == 1 || is_detected_current_robot_chain() == 1)
+      {
         set_bot_type(DETECTEDNODE);
+        mydata->detected_robot_chain_ID = mydata->current_robot_chain_ID;
       }
-      update_gradient();
-      if(mydata->bot_type == EXPLORER){
-        robot_explorer_behavior();  
-      }else if(mydata->bot_type == NODE || mydata->bot_type == DETECTEDNODE){
+        update_gradient();
+      if (mydata->bot_type == EXPLORER)
+      {
+        robot_explorer_behavior();
+      }
+      else if (mydata->bot_type == NODE || mydata->bot_type == DETECTEDNODE)
+      {
         robot_node_behavior();
-      }else if(mydata->bot_type == LOSTCHAIN){
+      }
+      else if (mydata->bot_type == LOSTCHAIN)
+      {
         robot_lost_chain_behavior();
-      }else{
+      }
+      else
+      {
         printf("ERROR");
       }
     }
 
-    if(kilo_ticks > 1000 && mydata->gradient > 200) {
+    if (kilo_ticks > 1000 && mydata->gradient > 200)
+    {
       set_bot_type(LOSTCHAIN);
     }
   }
   setup_message();
-  #ifdef DEBUG_CSV
-  fprintf(fpbox[kilo_uid],"%d,%s,%s,%s,%s,%d\n",kilo_ticks,get_bot_type_str(get_bot_type()), get_bot_state_str(get_bot_state()), get_move_type_str(get_move_type()), get_dist_state_str(get_dist_state()), mydata->N_Neighbors);
+#ifdef DEBUG_CSV
+  fprintf(fpbox[kilo_uid], "%d,%s,%s,%s,%s,%d\n", kilo_ticks, get_bot_type_str(get_bot_type()), get_bot_state_str(get_bot_state()), get_move_type_str(get_move_type()), get_dist_state_str(get_dist_state()), mydata->N_Neighbors);
   int z = 0;
-  for(z = 0; z < mydata->N_Neighbors;z++) 
+  for (z = 0; z < mydata->N_Neighbors; z++)
   {
-    fprintf(fpneighbors[kilo_uid],"%d,%d,%d,%s,%s,%d\n",kilo_ticks, mydata->neighbors[z].ID,mydata->neighbors[z].dist, get_bot_type_str(mydata->neighbors[z].n_bot_type), get_bot_state_str(mydata->neighbors[z].n_bot_state), mydata->neighbors[z].timestamp);
+    fprintf(fpneighbors[kilo_uid], "%d,%d,%d,%s,%s,%d\n", kilo_ticks, mydata->neighbors[z].ID, mydata->neighbors[z].dist, get_bot_type_str(mydata->neighbors[z].n_bot_type), get_bot_state_str(mydata->neighbors[z].n_bot_state), mydata->neighbors[z].timestamp);
   }
-  #endif
+#endif
 }
 
-extern char* (*callback_botinfo) (void);
+extern char *(*callback_botinfo)(void);
 char *botinfo(void);
 
 int main(void)
@@ -810,9 +911,9 @@ int main(void)
   SET_CALLBACK(botinfo, botinfo);
   SET_CALLBACK(reset, setup);
 
-  RB_init();                       // initialize ring buffer
+  RB_init(); // initialize ring buffer
   kilo_message_rx = rxbuffer_push;
-  kilo_message_tx = message_tx;    // register our transmission function
+  kilo_message_tx = message_tx; // register our transmission function
 
   kilo_start(setup, loop);
 
@@ -826,33 +927,32 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf (p, "ID: %d ", kilo_uid);
+  n = sprintf(p, "ID: %d ", kilo_uid);
   p += n;
 
-  n = sprintf (p, "Ns: %d, dist: %d ", mydata->N_Neighbors, find_nearest_N_dist());
+  n = sprintf(p, "Ns: %d, dist: %d ", mydata->N_Neighbors, find_nearest_N_dist());
   p += n;
 
-  n = sprintf (p, "bot_type: %s ",  get_bot_type_str(mydata->bot_type));
+  n = sprintf(p, "bot_type: %s ", get_bot_type_str(mydata->bot_type));
   p += n;
 
-  n = sprintf (p, "Nearest_Node_DIST: %d ", find_nearest_Node_dist() );
+  n = sprintf(p, "Nearest_Node_DIST: %d ", find_nearest_Node_dist());
   p += n;
-  n = sprintf (p, "Pre_DIST: %d ", mydata->pre_distance );
-  p += n;
-
-
-  n = sprintf (p, "gradient : %d\n ", mydata->gradient);
+  n = sprintf(p, "Pre_DIST: %d ", mydata->pre_distance);
   p += n;
 
-  n = sprintf (p, "chain_id : %d ", mydata->current_robot_chain_ID);
+  n = sprintf(p, "gradient : %d\n ", mydata->gradient);
   p += n;
 
-  n = sprintf (p, "pre_chain_id : %d ", mydata->previous_robot_chain_ID);
-  p += n;
-  n = sprintf (p, "E : %d\n ", mydata->E_value);
+  n = sprintf(p, "chain_id : %d ", mydata->current_robot_chain_ID);
   p += n;
 
-  n = sprintf (p, "tail? : %d\n ", is_there_higher_gradient());
+  n = sprintf(p, "pre_chain_id : %d ", mydata->previous_robot_chain_ID);
+  p += n;
+  n = sprintf(p, "E : %d\n ", mydata->E_value);
+  p += n;
+
+  n = sprintf(p, "tail? : %d\n ", is_there_higher_gradient());
   p += n;
 
   return botinfo_buffer;

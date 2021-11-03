@@ -49,6 +49,8 @@ typedef struct {
   uint8_t n_gradient;
   uint8_t n_current_robot_chain_ID;
 
+  uint8_t n_detected_robot_chain_ID;
+
 } Neighbor_t;
 
 typedef struct {
