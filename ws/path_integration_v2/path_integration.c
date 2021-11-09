@@ -31,9 +31,10 @@ typedef struct
   double body_angle;         //体の向き use EXPLORER bot
   double pos[2];             // rベクトル use EXPLORER bot
   uint8_t is_past_food;
+  uint8_t past_food_count;
   double start_pos[2];
   uint8_t is_detected_nest;
-
+  uint8_t detected_nest_count;
   message_t transmit_msg;
   char message_lock;
 
@@ -359,7 +360,19 @@ uint8_t get_dist_by_ID(uint16_t bot)
   }
   return dist;
 }
+uint8_t is_there_explorer_with_higher_id()
+{
 
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].ID > kilo_uid)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
 uint8_t find_NewNode()
 {
   uint8_t i;
@@ -402,7 +415,7 @@ uint8_t find_Explorer()
   uint8_t i;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if (mydata->neighbors[i].n_bot_type == EXPLORER)
+    if (mydata->neighbors[i].n_bot_type == EXPLORER )
     {
       return 1;
     }
@@ -637,8 +650,12 @@ void update_detect_nest()
   }
   if (find_Only_Nest())
   {
+    mydata->detected_nest_count++;
+  }else{
+    mydata->detected_nest_count = 0;
+  }
     // if(find_Nest()){
-
+  if(mydata->detected_nest_count > 128){
     mydata->is_detected_nest = 1;
     mydata->pos[X] = -mydata->start_pos[X];
     mydata->pos[Y] = -mydata->start_pos[Y];
@@ -646,12 +663,22 @@ void update_detect_nest()
 }
 void update_detect_food()
 {
+
+  if (mydata->is_past_food == 1)
+  {
+    return;
+  }
   // if (find_Food())
   // {
   //   mydata->is_past_food = 1;
   // }
   if (find_Only_Food())
   {
+    mydata->past_food_count++;
+  }else{
+    mydata->past_food_count = 0;
+  }
+  if(mydata->past_food_count > 128){
     mydata->is_past_food = 1;
   }
 }
@@ -686,6 +713,7 @@ void bhv_explorer()
   {
     if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 1.0)
     {
+
       if (find_Explorer())
       {
         stop_straight();
@@ -695,7 +723,10 @@ void bhv_explorer()
         go_straight();
       }
       if ((find_Nest() || find_NewNode()))
+      {
+
         set_bot_type(NEW_NODE);
+      }
     }
     else if (is_reverse())
     {
@@ -709,6 +740,12 @@ void bhv_explorer()
   else
   {
     follow_edge();
+    // if (is_there_explorer_with_higher_id())
+    // {
+    //   set_motors(0, 0);
+    //   set_move_type(STOP);
+    //   return;
+    // }
   }
 }
 void loop()
@@ -734,8 +771,9 @@ void loop()
   }
   else if (get_bot_type() == EXPLORER)
   {
+    printf("%d\n", mydata->N_Neighbors);
     if ((kilo_uid - 20) * 5000 < kilo_ticks)
-      bhv_explorer();
+    bhv_explorer();
   }
   setup_message();
 }
