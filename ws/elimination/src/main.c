@@ -797,7 +797,7 @@ void robot_explorer_behavior()
   {
     // if(find_nearest_Node_dist() > ORBIT_R) {
 
-    if (find_nearest_Node_dist() > ORBIT_R)
+    if (find_nearest_N_dist() > ORBIT_R)
     {
       uint8_t i;
       uint8_t next_chain_id = 100;
