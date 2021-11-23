@@ -23,6 +23,7 @@ extern uint8_t NGenes;
 
 enum BOTTYPE {NEST, FOOD, NODE, EXPLORER, NEW_NODE};
 enum BOTSTATES {WAIT, LISTEN, MOVE};
+enum BELONGTYPE {NEW, OLD, PI};
 
 const double ONE_STEP_MOVE_DIST = 33.0 * M_PI / 660.0; //円周の長さを1kilo_tickで割ったもの
 const double ONE_STEP_ROTATE_ANGLE = 360.0 / 660.0;
@@ -40,6 +41,7 @@ typedef struct {
   uint8_t n_gradient;
   uint8_t max_gradient;
   uint8_t n_is_tail;
+  uint8_t n_belong_type;
 } Neighbor_t;
 
 typedef struct {

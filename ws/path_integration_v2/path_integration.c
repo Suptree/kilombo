@@ -25,6 +25,7 @@ typedef struct
   int N_Neighbors;
   uint8_t bot_type;          //{NEST, FOOD, NODE, EXPLORER}
   uint8_t move_type;         //{STOP, FORWARD, LEFT, RIGHT}
+  uint8_t belong_type;       //{NEW, OLD, PI}
   uint8_t gradient;          //勾配 use NODE bot
   uint8_t max_gradient;      //最大勾配 use NODE bot
   Harfway_bot_t halfway_bot; // 中間地点の角度 use EXPLORER bot
@@ -34,6 +35,7 @@ typedef struct
   uint8_t past_food_count;
   double start_pos[2];
   uint8_t is_detected_nest;
+  uint8_t is_detected_half;
   uint8_t detected_nest_count;
   message_t transmit_msg;
   char message_lock;
@@ -135,6 +137,7 @@ void process_message()
   mydata->neighbors[i].n_gradient = data[3];
   mydata->neighbors[i].n_bot_type = data[4];
   mydata->neighbors[i].max_gradient = data[5];
+  mydata->neighbors[i].n_belong_type = data[6];
 }
 
 /* Go through the list of neighbors, remove entries older than a threshold,
@@ -163,6 +166,7 @@ void setup_message(void)
   mydata->transmit_msg.data[3] = mydata->gradient;
   mydata->transmit_msg.data[4] = mydata->bot_type;
   mydata->transmit_msg.data[5] = mydata->max_gradient;
+  mydata->transmit_msg.data[6] = mydata->belong_type;
 
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
@@ -263,7 +267,7 @@ void setup()
     mydata->max_gradient = 0;
   }
   // else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
-  else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000
+  else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
   {
     set_bot_type(NODE);
     set_move_type(STOP);
@@ -272,7 +276,7 @@ void setup()
     mydata->max_gradient = 0;
   }
   // else if (kilo_uid == 19) // FOOD bot
-  else if (kilo_uid == 41) // FOOD bot D = 1000
+  else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
   {
     set_bot_type(FOOD);
     set_move_type(STOP);
@@ -334,6 +338,7 @@ void setup()
   mydata->message_lock = 0;
   mydata->is_detected_nest = 0;
   mydata->N_Neighbors = 0;
+  mydata->belong_type = OLD;
   setup_message();
 }
 
@@ -368,6 +373,8 @@ uint8_t is_there_explorer_with_higher_id()
   uint8_t i;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
+    if (mydata->neighbors[i].n_bot_type != EXPLORER)
+      continue;
     if (mydata->neighbors[i].ID > kilo_uid)
     {
       return 1;
@@ -486,6 +493,8 @@ void update_harfway_info()
       mydata->halfway_bot.angle = halfway_acos;
       mydata->halfway_bot.pos[X] = mydata->pos[X];
       mydata->halfway_bot.pos[Y] = mydata->pos[Y];
+      mydata->is_detected_half = 1;
+      // printf("update half : %d\n", kilo_ticks);
     }
   }
   return;
@@ -704,33 +713,122 @@ uint8_t past_Food()
 
 void update_self_info()
 {
+  if (mydata->belong_type == PI)
+    return;
+  if (find_NewNode())
+  {
+    mydata->belong_type = NEW;
+  }
+  else
+  {
+    mydata->belong_type = OLD;
+  }
+}
+uint8_t do_stop()
+{
+
+  if (mydata->belong_type == PI)
+  {
+
+    uint8_t i;
+    for (i = 0; i < mydata->N_Neighbors; i++)
+    {
+      if (mydata->neighbors[i].n_bot_type != EXPLORER)
+        continue;
+
+      if (mydata->neighbors[i].n_belong_type == NEW)
+      {
+        if (kilo_uid == 49)
+        {
+          printf("[1]\n");
+        }
+        return 1; // stop
+      }
+    }
+  }
+  else if (mydata->belong_type == NEW)
+  {
+    if (is_there_explorer_with_higher_id())
+    {
+      if (kilo_uid == 49)
+      {
+        printf("[2]\n");
+      }
+      return 1;
+    }
+  }
+  else
+  { // belong type == OLD
+    if (is_there_explorer_with_higher_id())
+    {
+      if (kilo_uid == 49)
+      {
+        printf("[3]\n");
+      }
+      return 1;
+    }
+
+    uint8_t i;
+    for (i = 0; i < mydata->N_Neighbors; i++)
+    {
+      if (mydata->neighbors[i].n_bot_type != EXPLORER)
+        continue;
+
+      if (mydata->neighbors[i].n_belong_type == PI)
+      {
+        if (kilo_uid == 49)
+        {
+          printf("[4]\n");
+        }
+        return 1; // stop
+      }
+    }
+  }
+  return 0;
 }
 
 void bhv_explorer()
 {
   update_harfway_info();
-  if(mydata->is_detected_nest == 1)
-  update_detect_food();
+  if (mydata->is_detected_nest == 1)
+    update_detect_food();
   update_detect_nest();
+  update_self_info();
+  if (do_stop() == 1)
+  {
+    if (mydata->belong_type == PI)
+    {
+
+      if ((find_Nest() || find_NewNode()))
+      {
+        set_bot_type(NEW_NODE);
+      }
+    }
+    // printf("Kilo Uid : %d\n", kilo_uid);
+    set_motors(0, 0);
+    return;
+  }
+
   // printf("pos(x, y) = (%f, %f)\n", mydata->pos[X], mydata->pos[Y]);
 
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
   if (mydata->pos[Y] < 0)
     angle_acos = 360.0 - angle_acos;
 
-  if (past_Food() )
+  if (past_Food() && mydata->is_detected_half == 1)
   {
     if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 1.0)
     {
 
-      if (find_Explorer())
-      {
-        stop_straight();
-      }
-      else
-      {
-        go_straight();
-      }
+      // if (find_Explorer())
+      // {
+      //   stop_straight();
+      // }
+      // else
+      // {
+      mydata->belong_type = PI;
+      go_straight();
+      // }
       if ((find_Nest() || find_NewNode()))
       {
         set_bot_type(NEW_NODE);
@@ -739,6 +837,7 @@ void bhv_explorer()
     else if (is_reverse())
     {
       rotate_move();
+      mydata->belong_type = PI;
     }
     else
     {
@@ -784,9 +883,9 @@ void loop()
   else if (get_bot_type() == EXPLORER)
   {
     // printf("%d\n", mydata->N_Neighbors);
-    if ((kilo_uid - 40) * 15000 < kilo_ticks)
+    // if ((kilo_uid - 40) * 15000 < kilo_ticks) // increase robot
     // if ((kilo_uid - 20) * 15000 < kilo_ticks)
-      bhv_explorer();
+    bhv_explorer();
   }
   setup_message();
 }
@@ -822,7 +921,7 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d ", kilo_uid);
+  n = sprintf(p, "ID: %d, belong to %d. bot_type : %d\n", kilo_uid, mydata->belong_type, mydata->bot_type);
   p += n;
 
   n = sprintf(p, "Ns: %d, dist: %d, Gradient : %d, max_gradient : %d\n ", mydata->N_Neighbors, find_nearest_N_dist(), mydata->gradient, mydata->max_gradient);
