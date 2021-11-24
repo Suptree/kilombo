@@ -34,6 +34,8 @@ typedef struct
   uint8_t is_past_food;
   uint8_t past_food_count;
   double start_pos[2];
+  double goal_pos[2];
+
   uint8_t is_detected_nest;
   uint8_t is_detected_half;
   uint8_t detected_nest_count;
@@ -266,8 +268,8 @@ void setup()
     mydata->gradient = 0;
     mydata->max_gradient = 0;
   }
-  // else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
-  else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
+  else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
+  // else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
   {
     set_bot_type(NODE);
     set_move_type(STOP);
@@ -275,8 +277,8 @@ void setup()
     mydata->gradient = UINT8_MAX;
     mydata->max_gradient = 0;
   }
-  // else if (kilo_uid == 19) // FOOD bot
-  else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
+  else if (kilo_uid == 19) // FOOD bot
+  // else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
   {
     set_bot_type(FOOD);
     set_move_type(STOP);
@@ -375,6 +377,8 @@ uint8_t is_there_explorer_with_higher_id()
   {
     if (mydata->neighbors[i].n_bot_type != EXPLORER)
       continue;
+    if (mydata->neighbors[i].n_belong_type == PI)
+      continue;
     if (mydata->neighbors[i].ID > kilo_uid)
     {
       return 1;
@@ -424,7 +428,7 @@ uint8_t find_Explorer()
   uint8_t i;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if (mydata->neighbors[i].n_bot_type == EXPLORER)
+    if (mydata->neighbors[i].n_bot_type == EXPLORER && mydata->neighbors[i].n_belong_type == PI && mydata->neighbors[i].ID > kilo_uid)
     {
       return 1;
     }
@@ -539,76 +543,112 @@ void follow_edge()
 uint8_t is_reverse()
 { // 0 : 通常, 1 : Reverse
 
-  if (mydata->pos[Y] > 0)
+  // if (mydata->pos[Y] > 0)
+  // {
+  //   if (mydata->halfway_bot.pos[Y] > 0)
+  //   {
+  //     if (mydata->halfway_bot.pos[X] < mydata->pos[X])
+  //     {
+  //       // printf("通常周り\n");
+  //       // printf("[1]\n");
+  //       return 0;
+  //     }
+  //     else
+  //     {
+  //       // printf("反対周り\n");
+  //       // printf("[2]\n");
+  //       return 1;
+  //     }
+  //   }
+  //   else // if (mydata->halfway_bot.pos[Y] < 0)
+  //   {
+  //     if (mydata->halfway_bot.pos[X] < 0.0)
+  //     {
+  //       // printf("通常周り\n");
+  //       // printf("[3]\n");
+  //       return 0;
+  //     }
+  //     else
+  //     {
+  //       // printf("反対周り\n");
+  //       // printf("[4]\n");
+  //       return 1;
+  //     }
+  //   }
+  // }
+  // else //   if (mydata->pos[Y] < 0)
+  // {
+
+  //   if (mydata->halfway_bot.pos[Y] > 0)
+  //   {
+  //     if (mydata->halfway_bot.pos[X] > 0.0)
+  //     {
+  //       // printf("通常周り\n");
+  //       // printf("[5]\n");
+
+  //       return 0;
+  //     }
+  //     else
+  //     {
+  //       // printf("反対周り\n");
+  //       // printf("[6]\n");
+
+  //       return 1;
+  //     }
+  //   }
+  //   else // if (mydata->halfway_bot.pos[Y] < 0)
+  //   {
+  //     if (mydata->halfway_bot.pos[X] > mydata->pos[X])
+  //     {
+  //       // printf("通常周り\n");
+  //       // printf("[7]\n");
+
+  //       return 0;
+  //     }
+  //     else
+  //     {
+  //       // printf("反対周り\n");
+  //       // printf("[8]\n");
+
+  //       return 1;
+  //     }
+  //   }
+  // }
+  double r = atan2(mydata->goal_pos[X], mydata->goal_pos[Y]);
+  if (r < 0)
   {
-    if (mydata->halfway_bot.pos[Y] > 0)
-    {
-      if (mydata->halfway_bot.pos[X] < mydata->pos[X])
-      {
-        // printf("通常周り\n");
-        // printf("[1]\n");
-        return 0;
-      }
-      else
-      {
-        // printf("反対周り\n");
-        // printf("[2]\n");
-        return 1;
-      }
-    }
-    else // if (mydata->halfway_bot.pos[Y] < 0)
-    {
-      if (mydata->halfway_bot.pos[X] < 0.0)
-      {
-        // printf("通常周り\n");
-        // printf("[3]\n");
-        return 0;
-      }
-      else
-      {
-        // printf("反対周り\n");
-        // printf("[4]\n");
-        return 1;
-      }
-    }
+    r = r + 2 * M_PI;
   }
-  else //   if (mydata->pos[Y] < 0)
+  r = r * 360.0 / (2.0 * M_PI);
+  printf("Foodの角度 : %f\n", r);
+
+  double before_harf_r = atan2(mydata->halfway_bot.pos[X] , mydata->halfway_bot.pos[Y]);
+  if (before_harf_r < 0)
   {
+    before_harf_r = before_harf_r + 2 * M_PI;
+  }
 
-    if (mydata->halfway_bot.pos[Y] > 0)
-    {
-      if (mydata->halfway_bot.pos[X] > 0.0)
-      {
-        // printf("通常周り\n");
-        // printf("[5]\n");
+  before_harf_r = before_harf_r * 360.0 / (2.0 * M_PI);
+  printf("回転する前の中央勾配角度 : %f\n", before_harf_r);
 
-        return 0;
-      }
-      else
-      {
-        // printf("反対周り\n");
-        // printf("[6]\n");
+  double harf_r = atan2(cos(-r) * mydata->halfway_bot.pos[X] - sin(-r) * mydata->halfway_bot.pos[Y], cos(-r) * mydata->halfway_bot.pos[X] + sin(-r) * mydata->halfway_bot.pos[Y]);
+  if (harf_r < 0)
+  {
+    harf_r = harf_r + 2 * M_PI;
+  }
 
-        return 1;
-      }
-    }
-    else // if (mydata->halfway_bot.pos[Y] < 0)
-    {
-      if (mydata->halfway_bot.pos[X] > mydata->pos[X])
-      {
-        // printf("通常周り\n");
-        // printf("[7]\n");
+  harf_r = harf_r * 360.0 / (2.0 * M_PI);
+  printf("回転したあとの中央勾配角度 : %f\n", harf_r);
 
-        return 0;
-      }
-      else
-      {
-        // printf("反対周り\n");
-        // printf("[8]\n");
-
-        return 1;
-      }
-    }
+  if (harf_r > 180.0)
+  {
+    printf("リバース\n");
+    return 1;
+  }
+  else
+  {
+    printf("通常\n");
+    return 0;
   }
 }
 void rotate_move()
@@ -671,8 +711,8 @@ void update_detect_nest()
   if (mydata->detected_nest_count > 128)
   {
     mydata->is_detected_nest = 1;
-    mydata->pos[X] = -mydata->start_pos[X];
-    mydata->pos[Y] = -mydata->start_pos[Y];
+    mydata->pos[X] = 0.0;
+    mydata->pos[Y] = 0.0;
   }
 }
 void update_detect_food()
@@ -697,6 +737,8 @@ void update_detect_food()
   if (mydata->past_food_count > 128)
   {
     mydata->is_past_food = 1;
+    mydata->goal_pos[X] = mydata->pos[X];
+    mydata->goal_pos[Y] = mydata->pos[Y];
   }
 }
 uint8_t past_Food()
@@ -738,7 +780,7 @@ uint8_t do_stop()
 
       if (mydata->neighbors[i].n_belong_type == NEW)
       {
-        if (kilo_uid == 49)
+        if (kilo_uid == 43)
         {
           printf("[1]\n");
         }
@@ -750,7 +792,7 @@ uint8_t do_stop()
   {
     if (is_there_explorer_with_higher_id())
     {
-      if (kilo_uid == 49)
+      if (kilo_uid == 43)
       {
         printf("[2]\n");
       }
@@ -761,7 +803,7 @@ uint8_t do_stop()
   { // belong type == OLD
     if (is_there_explorer_with_higher_id())
     {
-      if (kilo_uid == 49)
+      if (kilo_uid == 43)
       {
         printf("[3]\n");
       }
@@ -776,7 +818,7 @@ uint8_t do_stop()
 
       if (mydata->neighbors[i].n_belong_type == PI)
       {
-        if (kilo_uid == 49)
+        if (kilo_uid == 43)
         {
           printf("[4]\n");
         }
@@ -789,6 +831,16 @@ uint8_t do_stop()
 
 void bhv_explorer()
 {
+
+
+  double r = atan2(mydata->pos[X], mydata->pos[Y]);
+  if (r < 0)
+  {
+    r = r + 2 * M_PI;
+  }
+  r = r * 360.0 / (2.0 * M_PI);
+  printf("myselfの角度 : %f\n", r);
+
   update_harfway_info();
   if (mydata->is_detected_nest == 1)
     update_detect_food();
@@ -820,15 +872,15 @@ void bhv_explorer()
     if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 1.0)
     {
 
-      // if (find_Explorer())
-      // {
-      //   stop_straight();
-      // }
-      // else
-      // {
-      mydata->belong_type = PI;
-      go_straight();
-      // }
+      if (find_Explorer())
+      {
+        stop_straight();
+      }
+      else
+      {
+        mydata->belong_type = PI;
+        go_straight();
+      }
       if ((find_Nest() || find_NewNode()))
       {
         set_bot_type(NEW_NODE);
@@ -857,6 +909,10 @@ void bhv_explorer()
     //   set_move_type(STOP);
     //   return;
     // }
+  }
+  if ((find_Food() && find_NewNode()))
+  {
+    set_bot_type(NEW_NODE);
   }
 }
 void loop()
