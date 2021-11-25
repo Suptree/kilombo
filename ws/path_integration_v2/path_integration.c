@@ -268,8 +268,8 @@ void setup()
     mydata->gradient = 0;
     mydata->max_gradient = 0;
   }
-  else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
-  // else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
+  // else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
+  else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
   {
     set_bot_type(NODE);
     set_move_type(STOP);
@@ -277,8 +277,8 @@ void setup()
     mydata->gradient = UINT8_MAX;
     mydata->max_gradient = 0;
   }
-  else if (kilo_uid == 19) // FOOD bot
-  // else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
+  // else if (kilo_uid == 19) // FOOD bot
+  else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
   {
     set_bot_type(FOOD);
     set_move_type(STOP);
@@ -614,42 +614,57 @@ uint8_t is_reverse()
   //     }
   //   }
   // }
-  double r = atan2(mydata->goal_pos[X], mydata->goal_pos[Y]);
-  if (r < 0)
+  //// Foodの角度計算やラジアン計算
+  double food_rad = atan2(mydata->goal_pos[Y], mydata->goal_pos[X]);
+  if (food_rad < 0)
   {
-    r = r + 2 * M_PI;
+    food_rad = food_rad + 2 * M_PI;
   }
-  r = r * 360.0 / (2.0 * M_PI);
-  printf("Foodの角度 : %f\n", r);
+  double food_angle = food_rad * 360.0 / (2.0 * M_PI);
+  
+  // printf("Foodの角度 : %f\n", food_angle);
 
-  double before_harf_r = atan2(mydata->halfway_bot.pos[X] , mydata->halfway_bot.pos[Y]);
-  if (before_harf_r < 0)
+
+  //// 中間勾配の角度計算やラジアン計算
+  double harf_rad = atan2(mydata->halfway_bot.pos[Y], mydata->halfway_bot.pos[X]);
+  if (harf_rad < 0)
   {
-    before_harf_r = before_harf_r + 2 * M_PI;
+    harf_rad = harf_rad + 2 * M_PI;
   }
+  double harf_angle = harf_rad * 360.0 / (2.0 * M_PI);
+  // if(kilo_uid == 59)
+  // printf("回転する前の中央勾配角度 : %f\n", harf_angle);
 
-  before_harf_r = before_harf_r * 360.0 / (2.0 * M_PI);
-  printf("回転する前の中央勾配角度 : %f\n", before_harf_r);
-
-  double harf_r = atan2(cos(-r) * mydata->halfway_bot.pos[X] - sin(-r) * mydata->halfway_bot.pos[Y], cos(-r) * mydata->halfway_bot.pos[X] + sin(-r) * mydata->halfway_bot.pos[Y]);
-  if (harf_r < 0)
-  {
-    harf_r = harf_r + 2 * M_PI;
+  double cal1 = 360.0 - food_angle;
+  double cal2 = cal1 + harf_angle;
+  if(cal2 > 360.0){
+    cal2 = cal2 - 360.0;
+  }else if(cal2 < 0){
+    cal2 = 360 + cal2;
   }
+//  printf("回転後の中央勾配角度 : %f\n", cal2);
 
-  harf_r = harf_r * 360.0 / (2.0 * M_PI);
-  printf("回転したあとの中央勾配角度 : %f\n", harf_r);
 
-  if (harf_r > 180.0)
+  if (cal2 > 180.0)
   {
-    printf("リバース\n");
+    // printf("リバース\n");
     return 1;
   }
   else
   {
-    printf("通常\n");
+    // printf("通常\n");
     return 0;
   }
+  // if (r > before_harf_r)
+  // {
+  //   // printf("リバース\n");
+  //   return 1;
+  // }
+  // else
+  // {
+  //   // printf("通常\n");
+  //   return 0;
+  // }
 }
 void rotate_move()
 {
@@ -782,7 +797,7 @@ uint8_t do_stop()
       {
         if (kilo_uid == 43)
         {
-          printf("[1]\n");
+          // printf("[1]\n");
         }
         return 1; // stop
       }
@@ -794,7 +809,7 @@ uint8_t do_stop()
     {
       if (kilo_uid == 43)
       {
-        printf("[2]\n");
+        // printf("[2]\n");
       }
       return 1;
     }
@@ -805,7 +820,7 @@ uint8_t do_stop()
     {
       if (kilo_uid == 43)
       {
-        printf("[3]\n");
+        // printf("[3]\n");
       }
       return 1;
     }
@@ -820,7 +835,7 @@ uint8_t do_stop()
       {
         if (kilo_uid == 43)
         {
-          printf("[4]\n");
+          // printf("[4]\n");
         }
         return 1; // stop
       }
@@ -831,15 +846,43 @@ uint8_t do_stop()
 
 void bhv_explorer()
 {
+  /*
+    double test_pos[2];
+    test_pos[X] = 5.0;
+    test_pos[Y] =-5.0;
+    //// Foodの角度計算やラジアン計算
+    double test_rad = atan2(test_pos[Y], test_pos[X]);
+    if (test_rad < 0)
+    {
+      test_rad = test_rad + 2 * M_PI;
+    }
+    double test_angle = test_rad * 360.0 / (2.0 * M_PI);
+    printf("Foodの角度 : %f\n" ,test_angle);
+    double test_radian = test_angle * (M_PI / 180.0);
+    // printf("before radian : %f, after radian : %f\n",test_rad,test_radian);
 
+    // 回転行列をかけたFoodの角度
+    double after_test_rad = atan2( \
+       cos(-test_radian) *test_pos[X]  + sin(-test_radian) * test_pos[Y],\
+       cos(-test_radian) * test_pos[X] - sin(-test_radian) * test_pos[Y]);
+    if (after_test_rad < 0)
+    {
+      after_test_rad = after_test_rad + 2 * M_PI;
+    }
+    double after_test_angle = after_test_rad * 360.0 / (2.0 * M_PI);
+    // if(kilo_uid == 59)
+    printf("回転したあとのFoodの角度 : %f\n", after_test_angle);
 
-  double r = atan2(mydata->pos[X], mydata->pos[Y]);
+  */
+
+  double r = atan2(mydata->pos[Y], mydata->pos[X]);
   if (r < 0)
   {
     r = r + 2 * M_PI;
   }
-  r = r * 360.0 / (2.0 * M_PI);
-  printf("myselfの角度 : %f\n", r);
+  r = (r * 360.0) / (2.0 * M_PI);
+  // if (kilo_uid == 59)
+    // printf("(x, y) = (%f, %f), 原点からの角度 : %f\n", mydata->pos[X], mydata->pos[Y], r);
 
   update_harfway_info();
   if (mydata->is_detected_nest == 1)
