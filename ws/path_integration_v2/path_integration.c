@@ -268,8 +268,8 @@ void setup()
     mydata->gradient = 0;
     mydata->max_gradient = 0;
   }
-  // else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
-  else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
+  else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
+  // else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
   {
     set_bot_type(NODE);
     set_move_type(STOP);
@@ -277,8 +277,8 @@ void setup()
     mydata->gradient = UINT8_MAX;
     mydata->max_gradient = 0;
   }
-  // else if (kilo_uid == 19) // FOOD bot
-  else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
+  else if (kilo_uid == 19) // FOOD bot
+  // else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
   {
     set_bot_type(FOOD);
     set_move_type(STOP);
@@ -296,46 +296,6 @@ void setup()
     mydata->body_angle = 90.0;
     mydata->pos[X] = 0.0;
     mydata->pos[Y] = 0.0;
-    // if (kilo_uid == 20)
-    // {
-    //   mydata->pos[X] = 50.0;
-    //   mydata->pos[Y] = -9.0;
-    // }
-    // else if (kilo_uid == 21)
-    // {
-    //   mydata->pos[X] = 0.0;
-    //   mydata->pos[Y] = 70.0;
-    // }
-    // else if (kilo_uid == 22)
-    // {
-    //   mydata->pos[X] = 80.0;
-    //   mydata->pos[Y] = 0.0;
-    // }
-    // else if (kilo_uid == 23)
-    // {
-    //   mydata->pos[X] = 80.0;
-    //   mydata->pos[Y] = 10.0;
-    // }
-    // else if (kilo_uid == 24)
-    // {
-    //   mydata->pos[X] = 80.0;
-    //   mydata->pos[Y] = 50.0;
-    // }
-    // else if (kilo_uid == 25)
-    // {
-    //   mydata->pos[X] = 80.0;
-    //   mydata->pos[Y] = 0.0;
-    // }
-    // else if (kilo_uid == 26)
-    // {
-    //   mydata->pos[X] = 25.0;
-    //   mydata->pos[Y] = 10.0;
-    // }
-    // else if (kilo_uid == 27)
-    // {
-    //   mydata->pos[X] = 10.0;
-    //   mydata->pos[Y] = 10.0;
-    // }
   }
   mydata->message_lock = 0;
   mydata->is_detected_nest = 0;
@@ -472,8 +432,6 @@ uint8_t find_nearest_N_dist()
 
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    // if (mydata->neighbors[i].n_bot_type == EXPLORER)
-    //   continue;
     if (mydata->neighbors[i].dist < dist)
     {
       dist = mydata->neighbors[i].dist;
@@ -498,7 +456,6 @@ void update_harfway_info()
       mydata->halfway_bot.pos[X] = mydata->pos[X];
       mydata->halfway_bot.pos[Y] = mydata->pos[Y];
       mydata->is_detected_half = 1;
-      // printf("update half : %d\n", kilo_ticks);
     }
   }
   return;
@@ -543,77 +500,6 @@ void follow_edge()
 uint8_t is_reverse()
 { // 0 : 通常, 1 : Reverse
 
-  // if (mydata->pos[Y] > 0)
-  // {
-  //   if (mydata->halfway_bot.pos[Y] > 0)
-  //   {
-  //     if (mydata->halfway_bot.pos[X] < mydata->pos[X])
-  //     {
-  //       // printf("通常周り\n");
-  //       // printf("[1]\n");
-  //       return 0;
-  //     }
-  //     else
-  //     {
-  //       // printf("反対周り\n");
-  //       // printf("[2]\n");
-  //       return 1;
-  //     }
-  //   }
-  //   else // if (mydata->halfway_bot.pos[Y] < 0)
-  //   {
-  //     if (mydata->halfway_bot.pos[X] < 0.0)
-  //     {
-  //       // printf("通常周り\n");
-  //       // printf("[3]\n");
-  //       return 0;
-  //     }
-  //     else
-  //     {
-  //       // printf("反対周り\n");
-  //       // printf("[4]\n");
-  //       return 1;
-  //     }
-  //   }
-  // }
-  // else //   if (mydata->pos[Y] < 0)
-  // {
-
-  //   if (mydata->halfway_bot.pos[Y] > 0)
-  //   {
-  //     if (mydata->halfway_bot.pos[X] > 0.0)
-  //     {
-  //       // printf("通常周り\n");
-  //       // printf("[5]\n");
-
-  //       return 0;
-  //     }
-  //     else
-  //     {
-  //       // printf("反対周り\n");
-  //       // printf("[6]\n");
-
-  //       return 1;
-  //     }
-  //   }
-  //   else // if (mydata->halfway_bot.pos[Y] < 0)
-  //   {
-  //     if (mydata->halfway_bot.pos[X] > mydata->pos[X])
-  //     {
-  //       // printf("通常周り\n");
-  //       // printf("[7]\n");
-
-  //       return 0;
-  //     }
-  //     else
-  //     {
-  //       // printf("反対周り\n");
-  //       // printf("[8]\n");
-
-  //       return 1;
-  //     }
-  //   }
-  // }
   //// Foodの角度計算やラジアン計算
   double food_rad = atan2(mydata->goal_pos[Y], mydata->goal_pos[X]);
   if (food_rad < 0)
@@ -846,34 +732,6 @@ uint8_t do_stop()
 
 void bhv_explorer()
 {
-  /*
-    double test_pos[2];
-    test_pos[X] = 5.0;
-    test_pos[Y] =-5.0;
-    //// Foodの角度計算やラジアン計算
-    double test_rad = atan2(test_pos[Y], test_pos[X]);
-    if (test_rad < 0)
-    {
-      test_rad = test_rad + 2 * M_PI;
-    }
-    double test_angle = test_rad * 360.0 / (2.0 * M_PI);
-    printf("Foodの角度 : %f\n" ,test_angle);
-    double test_radian = test_angle * (M_PI / 180.0);
-    // printf("before radian : %f, after radian : %f\n",test_rad,test_radian);
-
-    // 回転行列をかけたFoodの角度
-    double after_test_rad = atan2( \
-       cos(-test_radian) *test_pos[X]  + sin(-test_radian) * test_pos[Y],\
-       cos(-test_radian) * test_pos[X] - sin(-test_radian) * test_pos[Y]);
-    if (after_test_rad < 0)
-    {
-      after_test_rad = after_test_rad + 2 * M_PI;
-    }
-    double after_test_angle = after_test_rad * 360.0 / (2.0 * M_PI);
-    // if(kilo_uid == 59)
-    printf("回転したあとのFoodの角度 : %f\n", after_test_angle);
-
-  */
 
   double r = atan2(mydata->pos[Y], mydata->pos[X]);
   if (r < 0)
@@ -881,8 +739,6 @@ void bhv_explorer()
     r = r + 2 * M_PI;
   }
   r = (r * 360.0) / (2.0 * M_PI);
-  // if (kilo_uid == 59)
-    // printf("(x, y) = (%f, %f), 原点からの角度 : %f\n", mydata->pos[X], mydata->pos[Y], r);
 
   update_harfway_info();
   if (mydata->is_detected_nest == 1)
@@ -899,12 +755,10 @@ void bhv_explorer()
         set_bot_type(NEW_NODE);
       }
     }
-    // printf("Kilo Uid : %d\n", kilo_uid);
     set_motors(0, 0);
     return;
   }
 
-  // printf("pos(x, y) = (%f, %f)\n", mydata->pos[X], mydata->pos[Y]);
 
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
   if (mydata->pos[Y] < 0)
@@ -946,12 +800,6 @@ void bhv_explorer()
   else
   {
     follow_edge();
-    // if (is_there_explorer_with_higher_id())
-    // {
-    //   set_motors(0, 0);
-    //   set_move_type(STOP);
-    //   return;
-    // }
   }
   if ((find_Food() && find_NewNode()))
   {
@@ -981,9 +829,6 @@ void loop()
   }
   else if (get_bot_type() == EXPLORER)
   {
-    // printf("%d\n", mydata->N_Neighbors);
-    // if ((kilo_uid - 40) * 15000 < kilo_ticks) // increase robot
-    // if ((kilo_uid - 20) * 15000 < kilo_ticks)
     bhv_explorer();
   }
   setup_message();
