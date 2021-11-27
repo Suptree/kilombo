@@ -405,6 +405,8 @@ uint8_t find_Only_Food()
       return 0;
     if (mydata->neighbors[i].n_bot_type == FOOD)
     {
+      set_color(colorNum[6]);
+
       return 1;
     }
   }
@@ -419,6 +421,7 @@ uint8_t find_Only_Nest()
       return 0;
     if (mydata->neighbors[i].n_bot_type == NEST)
     {
+      set_color(colorNum[6]);
       return 1;
     }
   }
@@ -507,9 +510,8 @@ uint8_t is_reverse()
     food_rad = food_rad + 2 * M_PI;
   }
   double food_angle = food_rad * 360.0 / (2.0 * M_PI);
-  
-  // printf("Foodの角度 : %f\n", food_angle);
 
+  // printf("Foodの角度 : %f\n", food_angle);
 
   //// 中間勾配の角度計算やラジアン計算
   double harf_rad = atan2(mydata->halfway_bot.pos[Y], mydata->halfway_bot.pos[X]);
@@ -523,13 +525,15 @@ uint8_t is_reverse()
 
   double cal1 = 360.0 - food_angle;
   double cal2 = cal1 + harf_angle;
-  if(cal2 > 360.0){
+  if (cal2 > 360.0)
+  {
     cal2 = cal2 - 360.0;
-  }else if(cal2 < 0){
+  }
+  else if (cal2 < 0)
+  {
     cal2 = 360 + cal2;
   }
-//  printf("回転後の中央勾配角度 : %f\n", cal2);
-
+  //  printf("回転後の中央勾配角度 : %f\n", cal2);
 
   if (cal2 > 180.0)
   {
@@ -732,6 +736,7 @@ uint8_t do_stop()
 
 void bhv_explorer()
 {
+  set_color(colorNum[1]);
 
   double r = atan2(mydata->pos[Y], mydata->pos[X]);
   if (r < 0)
@@ -758,7 +763,6 @@ void bhv_explorer()
     set_motors(0, 0);
     return;
   }
-
 
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
   if (mydata->pos[Y] < 0)
