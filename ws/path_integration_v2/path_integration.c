@@ -662,7 +662,7 @@ void update_self_info()
 {
   if (mydata->belong_type == PI)
     return;
-  if (find_NewNode())
+  if (find_NewNode() || find_Nest())
   {
     mydata->belong_type = NEW;
   }
