@@ -685,9 +685,9 @@ uint8_t do_stop()
 
       if (mydata->neighbors[i].n_belong_type == NEW)
       {
-        if (kilo_uid == 43)
+        if (kilo_uid == 60)
         {
-          // printf("[1]\n");
+          printf("[1]\n");
         }
         return 1; // stop
       }
@@ -697,9 +697,9 @@ uint8_t do_stop()
   {
     if (is_there_explorer_with_higher_id())
     {
-      if (kilo_uid == 43)
+      if (kilo_uid == 60)
       {
-        // printf("[2]\n");
+        printf("[2]\n");
       }
       return 1;
     }
@@ -708,9 +708,9 @@ uint8_t do_stop()
   { // belong type == OLD
     if (is_there_explorer_with_higher_id())
     {
-      if (kilo_uid == 43)
+      if (kilo_uid == 60)
       {
-        // printf("[3]\n");
+        printf("[3]\n");
       }
       return 1;
     }
@@ -723,9 +723,9 @@ uint8_t do_stop()
 
       if (mydata->neighbors[i].n_belong_type == PI)
       {
-        if (kilo_uid == 43)
+        if (kilo_uid == 60)
         {
-          // printf("[4]\n");
+          printf("[4]\n");
         }
         return 1; // stop
       }
@@ -770,7 +770,7 @@ void bhv_explorer()
 
   if (past_Food() && mydata->is_detected_half == 1)
   {
-    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 1.0)
+    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5)
     {
 
       if (find_Explorer())
