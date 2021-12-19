@@ -268,8 +268,8 @@ void setup()
     mydata->gradient = 0;
     mydata->max_gradient = 0;
   }
-  else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
-  // else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
+  // else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
+  else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
   {
     set_bot_type(NODE);
     set_move_type(STOP);
@@ -277,8 +277,8 @@ void setup()
     mydata->gradient = UINT8_MAX;
     mydata->max_gradient = 0;
   }
-  else if (kilo_uid == 19) // FOOD bot
-  // else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
+  // else if (kilo_uid == 19) // FOOD bot
+  else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
   {
     set_bot_type(FOOD);
     set_move_type(STOP);
@@ -337,7 +337,7 @@ uint8_t is_there_explorer_with_higher_id()
   {
     if (mydata->neighbors[i].n_bot_type != EXPLORER)
       continue;
-    if (mydata->neighbors[i].n_belong_type == PI)
+    if (mydata->neighbors[i].n_belong_type != mydata->belong_type)
       continue;
     if (mydata->neighbors[i].ID > kilo_uid)
     {
@@ -721,7 +721,7 @@ uint8_t do_stop()
       if (mydata->neighbors[i].n_bot_type != EXPLORER)
         continue;
 
-      if (mydata->neighbors[i].n_belong_type == PI)
+      if (mydata->neighbors[i].n_belong_type == PI || mydata->neighbors[i].n_belong_type == NEW)
       {
         if (kilo_uid == 60)
         {
