@@ -572,7 +572,12 @@ void rotate_move()
   set_move_type(LEFT);
 }
 void go_straight()
-{
+{ 
+    set_move_type(STRAIGHT);
+
+    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+
   set_motors(kilo_turn_left, kilo_turn_right);
 }
 void stop_straight()
@@ -767,6 +772,11 @@ void bhv_explorer()
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
   if (mydata->pos[Y] < 0)
     angle_acos = 360.0 - angle_acos;
+
+  double vector = fabs(angle_trim(180 + angle_acos));
+
+  printf("vector : %f\n", vector);
+  printf("mydata->body_angle : %f\n", mydata->body_angle);
 
   if (past_Food() && mydata->is_detected_half == 1)
   {

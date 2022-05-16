@@ -27,6 +27,7 @@ typedef struct
   uint8_t move_type;         //{STOP, FORWARD, LEFT, RIGHT}
   double body_angle;         //体の向き use EXPLORER bot
   double pos[2];             // rベクトル use EXPLORER bot
+  uint8_t walk_type;
 
   message_t transmit_msg;
   char message_lock;
@@ -333,9 +334,9 @@ void follow_edge()
 
 void random_walk(){
   srand((unsigned int)time(NULL)+kilo_ticks);
-
-  uint8_t walk_type= rand()%2 +1;
-  if(walk_type == LEFT) {
+  if(kilo_ticks % 50 == 0)
+  mydata->walk_type= rand()%2 +1;
+  if(mydata->walk_type == LEFT) {
 
     if (get_move_type() == RIGHT)
       spinup_motors();
@@ -351,7 +352,7 @@ void random_walk(){
     mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
     mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 
-  }else if(walk_type == RIGHT ){
+  }else if(mydata->walk_type == RIGHT ){
     if (get_move_type() == LEFT)
       spinup_motors();
     set_motors(0, kilo_turn_right);
@@ -370,8 +371,8 @@ void random_walk(){
     set_motors(kilo_turn_left, kilo_turn_right);
     set_move_type(STRAIGHT);
 
-    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST ;
+    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST;
   }
 }
 void go_straight()
@@ -392,7 +393,6 @@ void stop_straight()
 void bhv_explorer()
 {
   set_color(colorNum[1]);
-  random_walk();
   double r = atan2(mydata->pos[Y], mydata->pos[X]);
   if (r < 0)
   {
@@ -406,7 +406,22 @@ void bhv_explorer()
     angle_acos = 360.0 - angle_acos;
   double vector = fabs(angle_trim(180 + angle_acos));
 
-  printf("%f\n", vector);
+  printf("vector : %f\n", vector);
+  printf("mydata->body_angle : %f\n", mydata->body_angle);
+    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5)
+    {       
+     go_straight();
+
+      printf("========= PIPIPI=========\n");
+      return;
+    }
+
+  if(find_Food()){
+    follow_edge();
+  }else{
+    random_walk();
+  }
+
 }
 void loop()
 {
