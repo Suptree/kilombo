@@ -268,8 +268,8 @@ void setup()
     mydata->gradient = 0;
     mydata->max_gradient = 0;
   }
-  // else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
-  else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
+  else if (kilo_uid >= 1 && kilo_uid <= 18) // NODE bot
+  // else if (kilo_uid >= 1 && kilo_uid <= 40) // NODE bot D=1000 increase robot
   {
     set_bot_type(NODE);
     set_move_type(STOP);
@@ -277,8 +277,8 @@ void setup()
     mydata->gradient = UINT8_MAX;
     mydata->max_gradient = 0;
   }
-  // else if (kilo_uid == 19) // FOOD bot
-  else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
+  else if (kilo_uid == 19) // FOOD bot
+  // else if (kilo_uid == 41) // FOOD bot D = 1000 increase robot
   {
     set_bot_type(FOOD);
     set_move_type(STOP);
