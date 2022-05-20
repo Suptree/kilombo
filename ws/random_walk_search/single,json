@@ -4,7 +4,7 @@
       "ID": 0,
       "direction": 3.2535819559231305,
       "state": {},
-      "x_position": 6.6666665077209473,
+      "x_position": 126.6666665077209473,
       "y_position": 72.0
     },
     {
@@ -16,10 +16,10 @@
     },
     {
       "ID": 2,
-      "direction": 3.2897040304929668,
+      "direction": 3.141592653,
       "state": {},
-      "x_position": 82.666664123535156,
-      "y_position": 97.333335876464844
+      "x_position": 0,
+      "y_position": 0 
     }
   ],
   "ticks": 2

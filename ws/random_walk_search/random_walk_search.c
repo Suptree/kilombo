@@ -257,27 +257,30 @@ uint8_t find_Only_Food()
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
     if (mydata->neighbors[i].n_bot_type == NODE)
-      return 0;
+      only = 0;
+      return only;
     if (mydata->neighbors[i].n_bot_type == FOOD)
     {
-      return 1;
+      only = 1;
     }
   }
-  return 0;
+  return only;
 }
 uint8_t find_Only_Nest()
 {
   uint8_t i;
+  uint8_t only = 0;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
     if (mydata->neighbors[i].n_bot_type == NODE)
-      return 0;
+      only = 0;
+      return only;
     if (mydata->neighbors[i].n_bot_type == NEST)
     {
-       return 1;
+      only = 1;
     }
   }
-  return 0;
+  return only;
 }
 
 uint8_t find_nearest_N_dist()
@@ -297,7 +300,7 @@ uint8_t find_nearest_N_dist()
 void follow_edge()
 {
   uint8_t desired_dist = 55;
-  if (find_nearest_N_dist() > desired_dist)
+   if (find_nearest_N_dist() > desired_dist)
   {
     if (get_move_type() == LEFT)
       spinup_motors();
@@ -335,7 +338,7 @@ void follow_edge()
 void random_walk(){
   srand((unsigned int)time(NULL)+kilo_ticks);
   if(kilo_ticks % 50 == 0)
-  mydata->walk_type= rand()%2 +1;
+  mydata->walk_type= rand()%3 +1;
   if(mydata->walk_type == LEFT) {
 
     if (get_move_type() == RIGHT)
@@ -371,8 +374,9 @@ void random_walk(){
     set_motors(kilo_turn_left, kilo_turn_right);
     set_move_type(STRAIGHT);
 
-    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST ;
-    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST;
+    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+
   }
 }
 void go_straight()
@@ -392,13 +396,23 @@ void stop_straight()
 
 void bhv_explorer()
 {
+  printf("==========\n");
   set_color(colorNum[1]);
+  printf("(x, y) = (%f, %f)\n", mydata->pos[X],mydata->pos[Y]);
   double r = atan2(mydata->pos[Y], mydata->pos[X]);
+  printf("atan2(x, y) = %f\n", r);
+
+
+  printf("ラジアンから角度へ変換 = %f\n", r * 180.0 / M_PI);
   if (r < 0)
   {
-    r = r + 2 * M_PI;
+    r = r + 2.0 * M_PI;
   }
-  r = (r * 360.0) / (2.0 * M_PI);
+
+ printf("r < 0 : r = %f\n", r);
+
+  r = r * 360.0 / (2.0 * M_PI);
+ printf("theta = %f\n", r);
 
 
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
@@ -406,7 +420,7 @@ void bhv_explorer()
     angle_acos = 360.0 - angle_acos;
   double vector = fabs(angle_trim(180 + angle_acos));
 
-  printf("vector : %f\n", vector);
+  // printf("vector : %f\n", vector);
   printf("mydata->body_angle : %f\n", mydata->body_angle);
     if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5)
     {       
@@ -416,11 +430,11 @@ void bhv_explorer()
       return;
     }
 
-  if(find_Food()){
+  // if(find_Food()){
     follow_edge();
-  }else{
-    random_walk();
-  }
+  // }else{
+  //   random_walk();
+  // }
 
 }
 void loop()
