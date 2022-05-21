@@ -338,9 +338,36 @@ void follow_edge()
 void random_walk(){
   srand((unsigned int)time(NULL)+kilo_ticks);
   if(kilo_ticks % 50 == 0)
-  mydata->walk_type= rand()%3 +1;
+  mydata->walk_type= rand()%2 +1;
   if(mydata->walk_type == LEFT) {
+    if (get_move_type() == LEFT)
+      spinup_motors();
+    set_motors(0, kilo_turn_right);
+    set_move_type(RIGHT);
+    mydata->body_angle = mydata->body_angle - ONE_STEP_ROTATE_ANGLE;
+    if (mydata->body_angle < 0)
+      mydata->body_angle = 360.0 + mydata->body_angle;
+    if (mydata->body_angle > 360)
+      mydata->body_angle = mydata->body_angle - 360.0;
 
+    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+
+    // if (get_move_type() == RIGHT)
+    //   spinup_motors();
+    // set_motors(kilo_turn_left, 0);
+    // set_move_type(LEFT);
+
+    // mydata->body_angle = mydata->body_angle + ONE_STEP_ROTATE_ANGLE;
+
+    // if (mydata->body_angle < 0)
+    //   mydata->body_angle = 360.0 + mydata->body_angle;
+    // if (mydata->body_angle > 360)
+    //   mydata->body_angle = mydata->body_angle - 360.0;
+    // mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    // mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+
+  }else if(mydata->walk_type == RIGHT ){
     if (get_move_type() == RIGHT)
       spinup_motors();
     set_motors(kilo_turn_left, 0);
@@ -355,19 +382,18 @@ void random_walk(){
     mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
     mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 
-  }else if(mydata->walk_type == RIGHT ){
-    if (get_move_type() == LEFT)
-      spinup_motors();
-    set_motors(0, kilo_turn_right);
-    set_move_type(RIGHT);
-    mydata->body_angle = mydata->body_angle - ONE_STEP_ROTATE_ANGLE;
-    if (mydata->body_angle < 0)
-      mydata->body_angle = 360.0 + mydata->body_angle;
-    if (mydata->body_angle > 360)
-      mydata->body_angle = mydata->body_angle - 360.0;
+    // if (get_move_type() == LEFT)
+    //   spinup_motors();
+    // set_motors(0, kilo_turn_right);
+    // set_move_type(RIGHT);
+    // mydata->body_angle = mydata->body_angle - ONE_STEP_ROTATE_ANGLE;
+    // if (mydata->body_angle < 0)
+    //   mydata->body_angle = 360.0 + mydata->body_angle;
+    // if (mydata->body_angle > 360)
+    //   mydata->body_angle = mydata->body_angle - 360.0;
 
-    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+    // mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    // mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 
   }else{
 
@@ -384,8 +410,8 @@ void go_straight()
     set_motors(kilo_turn_left, kilo_turn_right);
     set_move_type(STRAIGHT);
 
-    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[X] = mydata->pos[X] + 2.0*ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[Y] = mydata->pos[Y] + 2.0*ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 
 }
 void stop_straight()
@@ -400,16 +426,11 @@ void bhv_explorer()
   set_color(colorNum[1]);
   printf("(x, y) = (%f, %f)\n", mydata->pos[X],mydata->pos[Y]);
   double r = atan2(mydata->pos[Y], mydata->pos[X]);
-  printf("atan2(x, y) = %f\n", r);
 
-
-  printf("ラジアンから角度へ変換 = %f\n", r * 180.0 / M_PI);
   if (r < 0)
   {
     r = r + 2.0 * M_PI;
   }
-
- printf("r < 0 : r = %f\n", r);
 
   r = r * 360.0 / (2.0 * M_PI);
  printf("theta = %f\n", r);
@@ -418,7 +439,8 @@ void bhv_explorer()
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
   if (mydata->pos[Y] < 0)
     angle_acos = 360.0 - angle_acos;
-  double vector = fabs(angle_trim(180 + angle_acos));
+  double vec_theta = fabs(angle_trim(180 + angle_acos));
+  printf("vec_theta = %f\n", vec_theta);
 
   // printf("vector : %f\n", vector);
   printf("mydata->body_angle : %f\n", mydata->body_angle);
@@ -431,9 +453,9 @@ void bhv_explorer()
     }
 
   // if(find_Food()){
-    follow_edge();
+    // follow_edge();
   // }else{
-  //   random_walk();
+    random_walk();
   // }
 
 }
