@@ -9,7 +9,11 @@ enum
   X,
   Y
 };
-
+enum
+{
+  FALSE,
+  TRUE
+};
 enum
 {
   STOP,
@@ -28,6 +32,9 @@ typedef struct
   double body_angle;         //体の向き use EXPLORER bot
   double pos[2];             // rベクトル use EXPLORER bot
   uint8_t walk_type;
+  double food_pos[2];
+  uint8_t path_integration;
+  uint32_t return_time;
 
   message_t transmit_msg;
   char message_lock;
@@ -127,6 +134,9 @@ void process_message()
   mydata->neighbors[i].dist = d;
   mydata->neighbors[i].N_Neighbors = data[2];
   mydata->neighbors[i].n_bot_type = data[4];
+  mydata->neighbors[i].food_pos[X] = data[5];
+  mydata->neighbors[i].food_pos[Y] = data[6];
+
 }
 
 /* Go through the list of neighbors, remove entries older than a threshold,
@@ -153,7 +163,8 @@ void setup_message(void)
   mydata->transmit_msg.data[1] = kilo_uid >> 8;       // 1 high ID
   mydata->transmit_msg.data[2] = mydata->N_Neighbors; // 2 number of neighbors
   mydata->transmit_msg.data[4] = mydata->bot_type;
-
+  mydata->transmit_msg.data[5] = mydata->food_pos[X];
+  mydata->transmit_msg.data[6] = mydata->food_pos[Y];
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
 }
@@ -196,6 +207,9 @@ void setup()
   }
   mydata->message_lock = 0;
   mydata->N_Neighbors = 0;
+  mydata->food_pos[X] = 0.0;
+  mydata->food_pos[Y] = 0.0;
+  mydata->return_time = 0;
   setup_message();
 }
 
@@ -256,9 +270,11 @@ uint8_t find_Only_Food()
   uint8_t only = 0;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if (mydata->neighbors[i].n_bot_type == NODE)
+    if (mydata->neighbors[i].n_bot_type == NODE){
+
       only = 0;
       return only;
+    }
     if (mydata->neighbors[i].n_bot_type == FOOD)
     {
       only = 1;
@@ -272,9 +288,11 @@ uint8_t find_Only_Nest()
   uint8_t only = 0;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if (mydata->neighbors[i].n_bot_type == NODE)
+    if (mydata->neighbors[i].n_bot_type == NODE){
+
       only = 0;
       return only;
+    }
     if (mydata->neighbors[i].n_bot_type == NEST)
     {
       only = 1;
@@ -334,11 +352,47 @@ void follow_edge()
     mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
   }
 }
+void go_straight()
+{
+  if(get_move_type() == LEFT) {
+    if (get_move_type() == LEFT)
+      spinup_motors();
+    set_motors(0, kilo_turn_right);
+    set_move_type(RIGHT);
+    mydata->body_angle = mydata->body_angle - ONE_STEP_ROTATE_ANGLE;
+    if (mydata->body_angle < 0)
+      mydata->body_angle = 360.0 + mydata->body_angle;
+    if (mydata->body_angle > 360)
+      mydata->body_angle = mydata->body_angle - 360.0;
+
+    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+
+
+  }else{
+    if (get_move_type() == RIGHT)
+      spinup_motors();
+    set_motors(kilo_turn_left, 0);
+    set_move_type(LEFT);
+
+    mydata->body_angle = mydata->body_angle + ONE_STEP_ROTATE_ANGLE;
+
+    if (mydata->body_angle < 0)
+      mydata->body_angle = 360.0 + mydata->body_angle;
+    if (mydata->body_angle > 360)
+      mydata->body_angle = mydata->body_angle - 360.0;
+    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+
+  }
+
+
+}
 
 void random_walk(){
   srand((unsigned int)time(NULL)+kilo_ticks);
   if(kilo_ticks % 50 == 0)
-  mydata->walk_type= rand()%2 +1;
+  mydata->walk_type= rand()%3 +1;
   if(mydata->walk_type == LEFT) {
     if (get_move_type() == LEFT)
       spinup_motors();
@@ -353,19 +407,6 @@ void random_walk(){
     mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
     mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 
-    // if (get_move_type() == RIGHT)
-    //   spinup_motors();
-    // set_motors(kilo_turn_left, 0);
-    // set_move_type(LEFT);
-
-    // mydata->body_angle = mydata->body_angle + ONE_STEP_ROTATE_ANGLE;
-
-    // if (mydata->body_angle < 0)
-    //   mydata->body_angle = 360.0 + mydata->body_angle;
-    // if (mydata->body_angle > 360)
-    //   mydata->body_angle = mydata->body_angle - 360.0;
-    // mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    // mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 
   }else if(mydata->walk_type == RIGHT ){
     if (get_move_type() == RIGHT)
@@ -382,37 +423,9 @@ void random_walk(){
     mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
     mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 
-    // if (get_move_type() == LEFT)
-    //   spinup_motors();
-    // set_motors(0, kilo_turn_right);
-    // set_move_type(RIGHT);
-    // mydata->body_angle = mydata->body_angle - ONE_STEP_ROTATE_ANGLE;
-    // if (mydata->body_angle < 0)
-    //   mydata->body_angle = 360.0 + mydata->body_angle;
-    // if (mydata->body_angle > 360)
-    //   mydata->body_angle = mydata->body_angle - 360.0;
-
-    // mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    // mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
-
   }else{
-
-    set_motors(kilo_turn_left, kilo_turn_right);
-    set_move_type(STRAIGHT);
-
-    mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
-
+    go_straight();
   }
-}
-void go_straight()
-{
-    set_motors(kilo_turn_left, kilo_turn_right);
-    set_move_type(STRAIGHT);
-
-    mydata->pos[X] = mydata->pos[X] + 2.0*ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
-    mydata->pos[Y] = mydata->pos[Y] + 2.0*ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
-
 }
 void stop_straight()
 {
@@ -423,6 +436,7 @@ void stop_straight()
 void bhv_explorer()
 {
   printf("==========\n");
+ 
   set_color(colorNum[1]);
   printf("(x, y) = (%f, %f)\n", mydata->pos[X],mydata->pos[Y]);
   double r = atan2(mydata->pos[Y], mydata->pos[X]);
@@ -444,18 +458,42 @@ void bhv_explorer()
 
   // printf("vector : %f\n", vector);
   printf("mydata->body_angle : %f\n", mydata->body_angle);
-    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5)
-    {       
-     go_straight();
 
-      printf("========= PIPIPI=========\n");
-      return;
+
+  if(mydata->path_integration == TRUE){
+    go_straight();
+    if(find_Nest() == TRUE){
+      mydata->path_integration = FALSE;
+      mydata->return_time = 0;
+      if(mydata->food_pos[X] != 0.0){
+        set_bot_type(NODE);
+      }
     }
+    printf("========= PIPIPI=========\n");
+    return;
+  }else if(find_Food() == TRUE){
+    mydata->food_pos[X] = mydata->pos[X];
+    mydata->food_pos[Y] = mydata->pos[Y];
+
+    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5 && kilo_ticks > 100)
+    {
+      mydata->path_integration = TRUE;
+    }       
+
+    follow_edge();
+    return;
+  }else{
+    mydata->return_time++;  
+    if(mydata->return_time > 5000 &&fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5){
+      mydata->path_integration = TRUE;
+    }
+    random_walk();
+    
+  }
 
   // if(find_Food()){
     // follow_edge();
   // }else{
-    random_walk();
   // }
 
 }
@@ -465,6 +503,9 @@ void loop()
   receive_inputs();
   if (get_bot_type() == NEST)
   {
+    if(mydata->food_pos[X] != 0.0){
+      set_color(colorNum[7]);
+    }
   }
   else if (get_bot_type() == NODE)
   {

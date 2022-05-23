@@ -32,7 +32,7 @@ const double ONE_STEP_ROTATE_ANGLE = 360.0 / 660.0;
 typedef struct {
   uint16_t ID;
   uint8_t dist;
-//  int delta_dist;
+  double food_pos[2];
 
   uint8_t n_bot_type;
   uint8_t N_Neighbors;
