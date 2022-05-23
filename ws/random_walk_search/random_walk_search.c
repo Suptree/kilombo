@@ -467,6 +467,7 @@ void bhv_explorer()
       mydata->return_time = 0;
       if(mydata->food_pos[X] != 0.0){
         set_bot_type(NODE);
+        stop_straight();
       }
     }
     printf("========= PIPIPI=========\n");
