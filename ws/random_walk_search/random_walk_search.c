@@ -377,7 +377,7 @@ uint8_t find_nearest_N_dist()
 }
 void follow_edge()
 {
-  uint8_t desired_dist = 55;
+  uint8_t desired_dist = 40;
    if (find_nearest_N_dist() > desired_dist)
   {
     if (get_move_type() == LEFT)
@@ -558,7 +558,23 @@ void bhv_explorer()
 
     follow_edge();
     return;
-  }else if(find_Nest() == TRUE || find_Node() == TRUE){
+  // }else if(mydata->food_pos[X] != 0 && (find_Food() == TRUE || find_Node() == TRUE)){
+  //   double food_theta = atan2(mydata->food_pos[Y], mydata->food_pos[X]);
+
+  //   if (food_theta < 0)
+  //   {
+  //     food_theta = food_theta + 2.0 * M_PI;
+  //   }
+
+  //   food_theta = food_theta * 360.0 / (2.0 * M_PI);
+
+  //   if(fabs(food_theta - mydata->body_angle) < 0.5){
+  //     go_straight();
+  //   }else{
+  //     follow_edge();
+  //   }
+  }
+  else if(find_Nest() == TRUE || find_Node() == TRUE){
     mydata->food_pos[X] = get_food_pos_x();
     mydata->food_pos[Y] = get_food_pos_y();
     follow_edge();
