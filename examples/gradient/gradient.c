@@ -46,7 +46,10 @@ uint8_t colors[] = {
   RGB(0,1,1),  //6 - cyan
   RGB(0,0,1),  //7 - blue
   RGB(1,0,1),  //8 - purple
-  RGB(3,3,3)   //9  - bright white
+  RGB(3,3,3),   //9  - bright white
+  RGB(3,0,0),  //10 - bright red
+  RGB(0,3,3),  //11 - bright cyan
+  RGB(3,3,0)   //12 - bright yellow 
 };
 
 /*

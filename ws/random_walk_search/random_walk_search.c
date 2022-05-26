@@ -196,13 +196,19 @@ void setup()
     set_color(colorNum[5]); // cyan
 
   }
+  // else if(kilo_uid <= 5){
+  //   set_bot_type(NODE);
+  //   set_move_type(STOP);
+  //   set_color(colorNum[8]); // white
+  // }
   else // EXPLORER bot
   {
     set_bot_type(EXPLORER);
     set_move_type(STOP);
     set_color(colorNum[1]);
     mydata->body_angle = 90.0;
-    mydata->pos[X] = 0.0;
+    
+    mydata->pos[X] = (kilo_uid - 1) * 60.0;
     mydata->pos[Y] = 0.0;
   }
   mydata->message_lock = 0;
@@ -238,6 +244,47 @@ uint8_t get_dist_by_ID(uint16_t bot)
   }
   return dist;
 }
+double get_food_pos_x()
+{
+  uint8_t i;
+  double pos_x = 0.0;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].food_pos[X] != 0.0)
+    {
+      pos_x = mydata->neighbors[i].food_pos[X];
+      break;
+    }
+  }
+  return pos_x;
+}
+
+double get_food_pos_y()
+{
+  uint8_t i;
+  double pos_y = 0.0;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].food_pos[Y] != 0.0)
+    {
+      pos_y = mydata->neighbors[i].food_pos[Y];
+      break;
+    }
+  }
+  return pos_y;
+}
+uint8_t find_Explorer()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == EXPLORER && mydata->neighbors[i].ID > kilo_uid)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
 
 uint8_t find_Nest()
 {
@@ -251,6 +298,19 @@ uint8_t find_Nest()
   }
   return 0;
 }
+uint8_t find_Node()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == NODE)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 uint8_t find_Food()
 {
   uint8_t i;
@@ -390,7 +450,8 @@ void go_straight()
 }
 
 void random_walk(){
-  srand((unsigned int)time(NULL)+kilo_ticks);
+  // srand((unsigned int)time(NULL)+kilo_ticks+kilo_uid);
+  srand(kilo_ticks+kilo_uid);
   if(kilo_ticks % 50 == 0)
   mydata->walk_type= rand()%3 +1;
   if(mydata->walk_type == LEFT) {
@@ -432,13 +493,26 @@ void stop_straight()
   set_motors(0, 0);
 }
 
+void bhv_nest(){
+
+  mydata->food_pos[X] = get_food_pos_x();
+  mydata->food_pos[Y] = get_food_pos_y();
+
+  if(mydata->food_pos[X] != 0.0){
+    set_color(RGB(3,3,0));//yellow
+  }
+}
 
 void bhv_explorer()
 {
-  printf("==========\n");
+  // printf("==========\n");
  
   set_color(colorNum[1]);
-  printf("(x, y) = (%f, %f)\n", mydata->pos[X],mydata->pos[Y]);
+  if(find_Explorer() == TRUE){
+    stop_straight();
+    return;
+  }
+  // printf("(x, y) = (%f, %f)\n", mydata->pos[X],mydata->pos[Y]);
   double r = atan2(mydata->pos[Y], mydata->pos[X]);
 
   if (r < 0)
@@ -447,22 +521,22 @@ void bhv_explorer()
   }
 
   r = r * 360.0 / (2.0 * M_PI);
- printf("theta = %f\n", r);
+//  printf("theta = %f\n", r);
 
 
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
   if (mydata->pos[Y] < 0)
     angle_acos = 360.0 - angle_acos;
   double vec_theta = fabs(angle_trim(180 + angle_acos));
-  printf("vec_theta = %f\n", vec_theta);
+  // printf("vec_theta = %f\n", vec_theta);
 
   // printf("vector : %f\n", vector);
-  printf("mydata->body_angle : %f\n", mydata->body_angle);
+  // printf("mydata->body_angle : %f\n", mydata->body_angle);
 
 
   if(mydata->path_integration == TRUE){
     go_straight();
-    if(find_Nest() == TRUE){
+    if(find_Nest() == TRUE || find_Node() == TRUE){
       mydata->path_integration = FALSE;
       mydata->return_time = 0;
       if(mydata->food_pos[X] != 0.0){
@@ -470,7 +544,8 @@ void bhv_explorer()
         stop_straight();
       }
     }
-    printf("========= PIPIPI=========\n");
+    
+    // printf("========= PIPIPI=========\n");
     return;
   }else if(find_Food() == TRUE){
     mydata->food_pos[X] = mydata->pos[X];
@@ -483,6 +558,10 @@ void bhv_explorer()
 
     follow_edge();
     return;
+  }else if(find_Nest() == TRUE || find_Node() == TRUE){
+    mydata->food_pos[X] = get_food_pos_x();
+    mydata->food_pos[Y] = get_food_pos_y();
+    follow_edge();
   }else{
     mydata->return_time++;  
     if(mydata->return_time > 5000 &&fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5){
@@ -504,9 +583,7 @@ void loop()
   receive_inputs();
   if (get_bot_type() == NEST)
   {
-    if(mydata->food_pos[X] != 0.0){
-      set_color(colorNum[7]);
-    }
+    bhv_nest();
   }
   else if (get_bot_type() == NODE)
   {
@@ -555,7 +632,7 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d \n", kilo_uid);
+  n = sprintf(p, "ID: %d, Food pos : (%f, %f)\n", kilo_uid, mydata->food_pos[X], mydata->food_pos[Y]);
   p += n;
 
 
