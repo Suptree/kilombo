@@ -34,7 +34,9 @@ typedef struct
   uint8_t walk_type;
   double food_pos[2];
   uint8_t path_integration;
+  uint8_t inverse_path_integration;
   uint32_t return_time;
+  uint8_t detected_food;
 
   message_t transmit_msg;
   char message_lock;
@@ -216,6 +218,8 @@ void setup()
   mydata->food_pos[X] = 0.0;
   mydata->food_pos[Y] = 0.0;
   mydata->return_time = 0;
+  mydata->detected_food = 0;
+  mydata->inverse_path_integration = 0;
   setup_message();
 }
 
@@ -377,7 +381,9 @@ uint8_t find_nearest_N_dist()
 }
 void follow_edge()
 {
-  uint8_t desired_dist = 40;
+  // uint8_t desired_dist = 55;
+  
+  uint8_t desired_dist = 55;
    if (find_nearest_N_dist() > desired_dist)
   {
     if (get_move_type() == LEFT)
@@ -532,14 +538,31 @@ void bhv_explorer()
 
   // printf("vector : %f\n", vector);
   // printf("mydata->body_angle : %f\n", mydata->body_angle);
+  if(mydata->inverse_path_integration == TRUE){
 
-
-  if(mydata->path_integration == TRUE){
     go_straight();
-    if(find_Nest() == TRUE || find_Node() == TRUE){
-      mydata->path_integration = FALSE;
+    if(find_Food()== TRUE){
+      mydata->inverse_path_integration = FALSE;
+    }
+  }
+  else if(mydata->path_integration == TRUE){
+    go_straight();
+    printf("%d : go straight\n", kilo_ticks);
+
+    if(find_Nest() == TRUE || find_Node() == TRUE) {
+      if(mydata->detected_food == FALSE && mydata->food_pos[X] != 0.0){ // NESTからFOODの状態をもらっているとき
+        printf("detected false\n");
+        if(find_nearest_N_dist() < 45){
+          mydata->path_integration = FALSE;
+
+        printf("detected true :  45 dist\n");
+        }
+      }else{
+          mydata->path_integration = FALSE;
+        printf("detected true\n");
+      }
       mydata->return_time = 0;
-      if(mydata->food_pos[X] != 0.0){
+      if(mydata->detected_food == TRUE){
         set_bot_type(NODE);
         stop_straight();
       }
@@ -550,6 +573,7 @@ void bhv_explorer()
   }else if(find_Food() == TRUE){
     mydata->food_pos[X] = mydata->pos[X];
     mydata->food_pos[Y] = mydata->pos[Y];
+    mydata->detected_food = 1;
 
     if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5 && kilo_ticks > 100)
     {
@@ -557,27 +581,28 @@ void bhv_explorer()
     }       
 
     follow_edge();
+    printf("%d : food true\n", kilo_ticks);
     return;
-  // }else if(mydata->food_pos[X] != 0 && (find_Food() == TRUE || find_Node() == TRUE)){
-  //   double food_theta = atan2(mydata->food_pos[Y], mydata->food_pos[X]);
-
-  //   if (food_theta < 0)
-  //   {
-  //     food_theta = food_theta + 2.0 * M_PI;
-  //   }
-
-  //   food_theta = food_theta * 360.0 / (2.0 * M_PI);
-
-  //   if(fabs(food_theta - mydata->body_angle) < 0.5){
-  //     go_straight();
-  //   }else{
-  //     follow_edge();
-  //   }
   }
   else if(find_Nest() == TRUE || find_Node() == TRUE){
     mydata->food_pos[X] = get_food_pos_x();
     mydata->food_pos[Y] = get_food_pos_y();
-    follow_edge();
+    printf("%d : nearest 15\n", kilo_ticks);
+    double food_r = atan2(mydata->food_pos[Y], mydata->food_pos[X]);
+
+    if (food_r < 0)
+    {
+      food_r = food_r + 2.0 * M_PI;
+    }
+
+    food_r = food_r * 360.0 / (2.0 * M_PI);
+    printf("%f : food theta\n", food_r);
+    printf("%f : body angle\n", mydata->body_angle);
+    if(fabs(food_r - mydata->body_angle) < 0.5 && mydata->detected_food == FALSE && mydata->food_pos[X] != 0.0){
+      mydata->inverse_path_integration = TRUE;
+    }else{
+      follow_edge();
+    }
   }else{
     mydata->return_time++;  
     if(mydata->return_time > 5000 &&fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5){
@@ -585,6 +610,7 @@ void bhv_explorer()
     }
     random_walk();
     
+    printf("%d : else random\n", kilo_ticks);
   }
 
   // if(find_Food()){
@@ -648,7 +674,7 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d, Food pos : (%f, %f)\n", kilo_uid, mydata->food_pos[X], mydata->food_pos[Y]);
+  n = sprintf(p, "ID: %d, dist: %d, Food pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(),mydata->food_pos[X], mydata->food_pos[Y]);
   p += n;
 
 
