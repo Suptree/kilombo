@@ -166,9 +166,10 @@ void setup_message(void)
   mydata->transmit_msg.data[2] = mydata->N_Neighbors; // 2 number of neighbors
   mydata->transmit_msg.data[4] = mydata->bot_type;
   mydata->transmit_msg.data[5] = mydata->food_pos[X];
-  mydata->transmit_msg.data[6] = mydata->food_pos[Y];
+  mydata->transmit_msg.data[6] = (int)mydata->food_pos[Y];
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
+  printf("%d\n", (int)mydata->food_pos[Y]);
 }
 double angle_trim(double a)
 {
