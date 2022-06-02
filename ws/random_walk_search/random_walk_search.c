@@ -37,6 +37,8 @@ typedef struct
   uint8_t inverse_path_integration;
   uint32_t return_time;
   uint8_t detected_food;
+  uint8_t food_angle;
+  uint8_t food_angle_unit;
 
   message_t transmit_msg;
   char message_lock;
