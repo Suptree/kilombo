@@ -34,6 +34,9 @@ typedef struct {
   uint8_t dist;
   double food_pos[2];
 
+  uint8_t food_angle;
+  uint8_t food_angle_sign;
+
   uint8_t n_bot_type;
   uint8_t N_Neighbors;
   uint32_t timestamp;

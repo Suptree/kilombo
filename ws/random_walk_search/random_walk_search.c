@@ -38,7 +38,7 @@ typedef struct
   uint32_t return_time;
   uint8_t detected_food;
   uint8_t food_angle;
-  uint8_t food_angle_unit;
+  uint8_t food_angle_sign;
 
   message_t transmit_msg;
   char message_lock;
@@ -140,6 +140,8 @@ void process_message()
   mydata->neighbors[i].n_bot_type = data[4];
   mydata->neighbors[i].food_pos[X] = data[5];
   mydata->neighbors[i].food_pos[Y] = data[6];
+  mydata->neighbors[i].food_angle = data[7];
+  mydata->neighbors[i].food_angle_sign = data[8];
 
 }
 
@@ -169,6 +171,8 @@ void setup_message(void)
   mydata->transmit_msg.data[4] = mydata->bot_type;
   mydata->transmit_msg.data[5] = mydata->food_pos[X];
   mydata->transmit_msg.data[6] = (int)mydata->food_pos[Y];
+  mydata->transmit_msg.data[7] = mydata->food_angle;
+  mydata->transmit_msg.data[8] = mydata->food_angle_sign;
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
   printf("%d\n", (int)mydata->food_pos[Y]);
@@ -250,6 +254,24 @@ uint8_t get_dist_by_ID(uint16_t bot)
     }
   }
   return dist;
+}
+
+uint32_t get_food_angle()
+{
+  uint8_t i;
+  uint32_t food_angle = 0;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].food_angle != 0.0)
+    {
+      if(mydata->neighbors[i].food_angle_sign == 0) // マイナス
+      {
+        food_angle =mydata->neighbors[i].food_angle + 180 
+      }
+    }
+  }
+  return pos_x;
+
 }
 double get_food_pos_x()
 {
@@ -523,14 +545,12 @@ void bhv_explorer()
   }
   // printf("(x, y) = (%f, %f)\n", mydata->pos[X],mydata->pos[Y]);
   double r = atan2(mydata->pos[Y], mydata->pos[X]);
-
   if (r < 0)
   {
     r = r + 2.0 * M_PI;
   }
-
   r = r * 360.0 / (2.0 * M_PI);
-//  printf("theta = %f\n", r);
+  //  printf("theta = %f\n", r);
 
 
   double angle_acos = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
