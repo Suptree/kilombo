@@ -37,8 +37,9 @@ typedef struct
   uint8_t inverse_path_integration;
   uint32_t return_time;
   uint8_t detected_food;
-  uint8_t food_angle;
-  uint8_t food_angle_sign;
+  uint8_t food_msg_angle;
+  uint8_t food_msg_angle_sign;
+  uint32_t food_angle;
 
   message_t transmit_msg;
   char message_lock;
@@ -140,8 +141,8 @@ void process_message()
   mydata->neighbors[i].n_bot_type = data[4];
   mydata->neighbors[i].food_pos[X] = data[5];
   mydata->neighbors[i].food_pos[Y] = data[6];
-  mydata->neighbors[i].food_angle = data[7];
-  mydata->neighbors[i].food_angle_sign = data[8];
+  mydata->neighbors[i].food_msg_angle = data[7];
+  mydata->neighbors[i].food_msg_angle_sign = data[8];
 
 }
 
@@ -171,12 +172,11 @@ void setup_message(void)
   mydata->transmit_msg.data[4] = mydata->bot_type;
   mydata->transmit_msg.data[5] = mydata->food_pos[X];
   mydata->transmit_msg.data[6] = (int)mydata->food_pos[Y];
-  mydata->transmit_msg.data[7] = mydata->food_angle;
-  mydata->transmit_msg.data[8] = mydata->food_angle_sign;
+  mydata->transmit_msg.data[7] = mydata->food_msg_angle;
+  mydata->transmit_msg.data[8] = mydata->food_msg_angle_sign;
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
-  printf("%d\n", (int)mydata->food_pos[Y]);
-}
+ }
 double angle_trim(double a)
 {
   if (a < 0)
@@ -224,6 +224,9 @@ void setup()
   mydata->N_Neighbors = 0;
   mydata->food_pos[X] = 0.0;
   mydata->food_pos[Y] = 0.0;
+  mydata->food_msg_angle = 0;
+  mydata->food_msg_angle_sign = 0;
+  mydata->food_angle = 0;
   mydata->return_time = 0;
   mydata->detected_food = 0;
   mydata->inverse_path_integration = 0;
@@ -262,15 +265,17 @@ uint32_t get_food_angle()
   uint32_t food_angle = 0;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if (mydata->neighbors[i].food_angle != 0.0)
+    if (mydata->neighbors[i].food_msg_angle != 0)
     {
-      if(mydata->neighbors[i].food_angle_sign == 0) // マイナス
+      if(mydata->neighbors[i].food_msg_angle_sign == 0) // マイナス
       {
-        food_angle =mydata->neighbors[i].food_angle + 180 
+        food_angle =mydata->neighbors[i].food_msg_angle + 180;
+      }else{
+        food_angle = mydata->neighbors[i].food_msg_angle;
       }
     }
   }
-  return pos_x;
+  return food_angle;
 
 }
 double get_food_pos_x()
@@ -528,8 +533,19 @@ void bhv_nest(){
 
   mydata->food_pos[X] = get_food_pos_x();
   mydata->food_pos[Y] = get_food_pos_y();
+  mydata->food_angle = get_food_angle();
+  if(mydata->food_angle > 180){
+    mydata->food_msg_angle = 360 - mydata->food_angle;
+    mydata->food_msg_angle_sign = 0;
+  }else{
 
-  if(mydata->food_pos[X] != 0.0){
+    mydata->food_msg_angle = mydata->food_angle;
+    mydata->food_msg_angle_sign = 1;
+  }
+
+  
+
+  if(mydata->food_angle != 0){
     set_color(RGB(3,3,0));//yellow
   }
 }
@@ -562,18 +578,23 @@ void bhv_explorer()
   // printf("vector : %f\n", vector);
   // printf("mydata->body_angle : %f\n", mydata->body_angle);
   if(mydata->inverse_path_integration == TRUE){
+    printf("%d : inverse path integration\n", kilo_ticks);
 
     go_straight();
     if(find_Food()== TRUE){
-      mydata->inverse_path_integration = FALSE;
+      if(find_nearest_N_dist() < 45){
+        mydata->inverse_path_integration = FALSE;
+        printf("detected true :  45 dist\n");
+      }
     }
+    return;
   }
   else if(mydata->path_integration == TRUE){
     go_straight();
     printf("%d : go straight\n", kilo_ticks);
 
     if(find_Nest() == TRUE || find_Node() == TRUE) {
-      if(mydata->detected_food == FALSE && mydata->food_pos[X] != 0.0){ // NESTからFOODの状態をもらっているとき
+      if(mydata->detected_food == FALSE && mydata->food_angle != 0.0){ // NESTからFOODの状態をもらっているとき
         printf("detected false\n");
         if(find_nearest_N_dist() < 45){
           mydata->path_integration = FALSE;
@@ -596,21 +617,6 @@ void bhv_explorer()
   }else if(find_Food() == TRUE){
     mydata->food_pos[X] = mydata->pos[X];
     mydata->food_pos[Y] = mydata->pos[Y];
-    mydata->detected_food = 1;
-
-    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5 && kilo_ticks > 100)
-    {
-      mydata->path_integration = TRUE;
-    }       
-
-    follow_edge();
-    printf("%d : food true\n", kilo_ticks);
-    return;
-  }
-  else if(find_Nest() == TRUE || find_Node() == TRUE){
-    mydata->food_pos[X] = get_food_pos_x();
-    mydata->food_pos[Y] = get_food_pos_y();
-    printf("%d : nearest 15\n", kilo_ticks);
     double food_r = atan2(mydata->food_pos[Y], mydata->food_pos[X]);
 
     if (food_r < 0)
@@ -619,9 +625,58 @@ void bhv_explorer()
     }
 
     food_r = food_r * 360.0 / (2.0 * M_PI);
-    printf("%f : food theta\n", food_r);
-    printf("%f : body angle\n", mydata->body_angle);
-    if(fabs(food_r - mydata->body_angle) < 0.5 && mydata->detected_food == FALSE && mydata->food_pos[X] != 0.0){
+    mydata->food_angle = (int)food_r;
+
+    // printf("food_r : %f, int_food_r : %d\n", food_r, (int)food_r);
+
+    if(food_r > 180){
+      mydata->food_msg_angle = 360 - (int)food_r;
+      mydata->food_msg_angle_sign = 0;
+    }else{
+      mydata->food_msg_angle = (int)food_r;
+      mydata->food_msg_angle_sign = 1;
+    }
+
+    mydata->detected_food = 1;
+
+    if (fabs(angle_trim(180 + angle_acos) - mydata->body_angle) < 0.5 && kilo_ticks > 100)
+    {
+      mydata->path_integration = TRUE;
+
+    printf("======================\n");
+    printf("%d : food true - path_integration = true\n", kilo_ticks);
+    }       
+
+    follow_edge();
+
+    printf("======================\n");
+    printf("%d : food true\n", kilo_ticks);
+    return;
+  }
+  else if(find_Nest() == TRUE || find_Node() == TRUE){
+    mydata->food_angle = get_food_angle();
+    printf("nodeから受け取るよ : %d\n", mydata->food_angle);
+    // mydata->food_pos[X] = get_food_pos_x();
+    // mydata->food_pos[Y] = get_food_pos_y();
+    // printf("%d : nearest 15\n", kilo_ticks);
+    // double food_r = atan2(mydata->food_pos[Y], mydata->food_pos[X]);
+
+    // if (food_r < 0)
+    // {
+    //   food_r = food_r + 2.0 * M_PI;
+    // }
+
+    // food_r = food_r * 360.0 / (2.0 * M_PI);
+    // if(food_r > 180){
+    //   mydata->food_msg_angle = 360 - (int)food_r;
+    //   mydata->food_msg_angle_sign = 0;
+    // }else{
+    //   mydata->food_msg_angle = (int)food_r;
+    //   mydata->food_msg_angle_sign = 1;
+    // }
+    // printf("%f : food theta\n", food_r);
+    // printf("%f : body angle\n", mydata->body_angle);
+    if(abs(mydata->food_angle - mydata->body_angle) < 0.5 && mydata->detected_food == FALSE && mydata->food_angle != 0){
       mydata->inverse_path_integration = TRUE;
     }else{
       follow_edge();
@@ -697,7 +752,7 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d, dist: %d, Food pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(),mydata->food_pos[X], mydata->food_pos[Y]);
+  n = sprintf(p, "ID: %d, dist: %d, Food angle : %d\n", kilo_uid, find_nearest_N_dist(),mydata->food_angle);
   p += n;
 
 
