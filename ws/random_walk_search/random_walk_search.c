@@ -344,6 +344,18 @@ uint8_t find_Node()
   }
   return 0;
 }
+uint8_t find_Nodefood()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == NODEFOOD)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
 
 uint8_t find_Food()
 {
@@ -552,8 +564,13 @@ void bhv_nest(){
 
 void bhv_explorer()
 {
+  if(kilo_uid == 3){
+    FILE *fp;
+    fp = fopen("cordinate.txt", "w");
+    fprintf(fp, "%f,%f\n",mydata->pos[X],mydata->pos[Y]);
+    fclose(fp);
+  }
   // printf("==========\n");
- 
   set_color(colorNum[1]);
   if(find_Explorer() == TRUE){
     stop_straight();
@@ -581,11 +598,13 @@ void bhv_explorer()
     printf("%d : inverse path integration\n", kilo_ticks);
 
     go_straight();
-    if(find_Food()== TRUE){
-      if(find_nearest_N_dist() < 45){
+    if(find_Food()== TRUE || find_Nodefood() == TRUE){
+      // if(find_nearest_N_dist() < 45){
         mydata->inverse_path_integration = FALSE;
+        set_bot_type(NODEFOOD);
+        stop_straight();
         printf("detected true :  45 dist\n");
-      }
+      // }
     }
     return;
   }
@@ -705,7 +724,7 @@ void loop()
   {
     bhv_nest();
   }
-  else if (get_bot_type() == NODE)
+  else if (get_bot_type() == NODE || get_bot_type() == NODEFOOD)
   {
     set_move_type(STOP);
     set_color(colorNum[9]); // white
