@@ -29,7 +29,9 @@ typedef struct
   uint8_t move_type;             //{LEFT, RIGHT}
   uint8_t random_walk_move_type; //{LEFT, RIGHT, STARIGHT}
   uint32_t edge_follow_time;
+  uint32_t random_walk_time;
   uint8_t detect_food;
+  uint8_t homing_flag;
   double body_angle; //体の向き use EXPLORER bot
   double pos[2];     // rベクトル use EXPLORER bot
   message_t transmit_msg;
@@ -178,10 +180,12 @@ void setup()
     set_color(colorNum[1]);
     set_bot_type(EXPLORER);
     mydata->body_angle = 90.0;
-    mydata->pos[X] =(kilo_uid - 1) * 60.0;
+    mydata->pos[X] = (kilo_uid - 1) * 60.0;
     mydata->pos[Y] = 0.0;
     mydata->edge_follow_time = 0;
+    mydata->random_walk_time = 0;
     mydata->detect_food = 0;
+    mydata->homing_flag = 0;
   }
 
   set_move_type(STOP);
@@ -338,6 +342,7 @@ void move_stop()
 }
 void random_walk()
 {
+  mydata->random_walk_time++;
   srand(kilo_ticks + kilo_uid);
   if (kilo_ticks % 50 == 0)
   {                                             // 50kilo_ticksは同じ行動を取り続ける
@@ -379,11 +384,12 @@ void edge_follow()
   }
 }
 
-void get_out_edge_follow(){
+void get_out_edge_follow()
+{
   double desired_dist = 55.0;
   mydata->edge_follow_time++;
-  desired_dist += mydata->edge_follow_time * 0.01;
-  printf("%f\n",desired_dist );
+  desired_dist += mydata->edge_follow_time * 0.007;
+  printf("%f\n", desired_dist);
   if (find_nearest_N_dist() > desired_dist)
   {
     move_left();
@@ -397,7 +403,8 @@ void get_out_edge_follow(){
   }
 }
 
-double calculate_nest_angle(){
+double calculate_nest_angle()
+{
   // double food_pos_x = mydata->pos[X];
   // double food_pos_y = mydata->pos[Y];
   // double food_angle = atan2(food_pos_y, food_pos_x);
@@ -407,46 +414,79 @@ double calculate_nest_angle(){
 
   // food_angle = food_angle * 360.0 / (2.0 * M_PI);
   double nest_angle = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
-  if (mydata->pos[Y] < 0){
+  if (mydata->pos[Y] < 0)
+  {
     nest_angle = 360.0 - nest_angle;
   }
 
   nest_angle = angle_trim(180 + nest_angle);
-  
-  return nest_angle;
 
+  return nest_angle;
 }
 
-void path_integration(){
-  if(fabs(calculate_nest_angle() - mydata->body_angle) < 1.0){
+void path_integration()
+{
+  if (fabs(calculate_nest_angle() - mydata->body_angle) < 1.0)
+  {
     move_straight();
     printf("path_integration - move_straight\n");
-  }else{
+  }
+  else
+  {
     edge_follow();
     printf("path_integration - edge_follow\n");
   }
 
-  if(find_Nest() == TRUE){
+  if (find_Nest() == TRUE)
+  {
     set_bot_type(NODE);
   }
 }
 
+void explore()
+{
+
+  if (fabs(calculate_nest_angle() - mydata->body_angle) < 1.0 && mydata->random_walk_time > 5000)
+  {
+    mydata->homing_flag = TRUE;
+  }
+
+  if ((find_Node() || find_Nest()) && find_nearest_N_dist() < 50)
+  { // nestからfoodの情報が得られたらedge_followに変更
+    get_out_edge_follow();
+    mydata->homing_flag = FALSE;
+    mydata->random_walk_time = 0;
+
+    printf("explore - get_out_edge_follow\n");
+  }
+  else if (mydata->homing_flag == TRUE)
+  {
+    move_straight();
+    printf("explore - move_straight\n");
+  }
+  else
+  {
+    random_walk();
+    printf("explore - random_walk\n");
+  }
+}
 void bhv_explorer()
 {
   // edge_follow();
   // get_out_edge_follow();
-  if(find_Food() == TRUE){
+  if (find_Food() == TRUE)
+  {
     mydata->detect_food = TRUE;
   }
 
-
-
-  if(mydata->detect_food == TRUE ){
+  if (mydata->detect_food == TRUE)
+  {
     path_integration();
-  }else{
-    random_walk();
   }
-
+  else
+  {
+    explore();
+  }
 }
 
 void loop()
@@ -461,7 +501,6 @@ void loop()
     set_color(colorNum[9]); // white
     set_motors(0, 0);
     set_move_type(STOP);
-
   }
   else if (get_bot_type() == FOOD)
   {
