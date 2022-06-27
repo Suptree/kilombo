@@ -39,6 +39,7 @@ typedef struct
   uint8_t food_msg_angle_sign; // messageで使用
   message_t transmit_msg;
   char message_lock;
+  int cover_rate[10000][10000];
   FILE *fp;
 
   received_message_t RXBuffer[RB_SIZE];
@@ -584,9 +585,21 @@ void target_path_integration(){
 }
 void bhv_explorer()
 {
-  if(kilo_uid == 2 && kilo_ticks < 200000){
-    fprintf(mydata->fp, "%f,%f\n",mydata->pos[X],mydata->pos[Y]);
-  }
+  // if(kilo_uid == 2 ){
+  //   fprintf(mydata->fp, "%f,%f\n",mydata->pos[X],mydata->pos[Y]);
+  //   mydata->cover_rate[(int)mydata->pos[X]+5000][(int)mydata->pos[Y]+5000] = 1;
+  //   // int i = 0, j = 0;
+  //   int count = 0;
+  //   for(int i = 4500; i < 5500; i++){
+  //     for(int j = 4500; j < 5500; j++){
+  //       if(mydata->cover_rate[i][j]==1){
+  //         count++;
+  //       }
+  //     }
+  //   }
+  //   printf("cover rate : %f\n", (double)count / 1000000.0);
+  // }
+
 
   // edge_follow();
   // get_out_edge_follow();
