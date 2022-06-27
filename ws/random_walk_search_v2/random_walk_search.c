@@ -28,8 +28,9 @@ typedef struct
   uint8_t bot_type;              //{NEST, FOOD, NODE, EXPLORER}
   uint8_t move_type;             //{LEFT, RIGHT}
   uint8_t random_walk_move_type; //{LEFT, RIGHT, STARIGHT}
-  double body_angle;             //体の向き use EXPLORER bot
-  double pos[2];                 // rベクトル use EXPLORER bot
+  uint32_t edge_follow_time;
+  double body_angle; //体の向き use EXPLORER bot
+  double pos[2];     // rベクトル use EXPLORER bot
   message_t transmit_msg;
   char message_lock;
 
@@ -178,6 +179,7 @@ void setup()
     mydata->body_angle = 90.0;
     mydata->pos[X] = 0.0;
     mydata->pos[Y] = 0.0;
+    mydata->edge_follow_time = 0;
   }
 
   set_move_type(STOP);
@@ -280,7 +282,45 @@ void CalculateLocalCordinateSystem(int move_type)
   mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
   mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
 }
+void move_left()
+{
 
+  set_motors(0, kilo_turn_right);
+  set_move_type(LEFT);
+  CalculateLocalCordinateSystem(LEFT);
+}
+
+void move_right()
+{
+
+  set_motors(kilo_turn_left, 0);
+  set_move_type(RIGHT);
+  CalculateLocalCordinateSystem(RIGHT);
+}
+
+void move_straight()
+{
+
+  if (get_move_type() == LEFT)
+  {
+    set_motors(kilo_turn_left, 0);
+    set_move_type(RIGHT);
+    CalculateLocalCordinateSystem(RIGHT);
+  }
+  else
+  { // get_move_type() == RIGHT
+    set_motors(0, kilo_turn_right);
+    set_move_type(LEFT);
+    CalculateLocalCordinateSystem(LEFT);
+  }
+}
+
+void move_stop()
+{
+
+  set_motors(0, 0);
+  set_move_type(STOP);
+}
 void random_walk()
 {
   srand(kilo_ticks + kilo_uid);
@@ -291,55 +331,59 @@ void random_walk()
 
   if (mydata->random_walk_move_type == LEFT)
   {
-    set_motors(0, kilo_turn_right);
-    set_move_type(LEFT);
-    CalculateLocalCordinateSystem(LEFT);
+    move_left();
   }
   else if (mydata->random_walk_move_type == RIGHT)
   {
-    set_motors(kilo_turn_left, 0);
-    set_move_type(RIGHT);
-    CalculateLocalCordinateSystem(RIGHT);
+    move_right();
   }
   else
   { // mydata->random_walk_move_type == STRAIGHT
-    if (get_move_type() == LEFT)
-    {
-      set_motors(kilo_turn_left, 0);
-      set_move_type(RIGHT);
-      CalculateLocalCordinateSystem(RIGHT);
-    }
-    else
-    { // get_move_type() == RIGHT
-      set_motors(0, kilo_turn_right);
-      set_move_type(LEFT);
-      CalculateLocalCordinateSystem(LEFT);
-    }
+    move_straight();
   }
 }
 
 void edge_follow()
 {
-  uint8_t desired_dist = 55;
+  double desired_dist = 55.0;
   if (find_nearest_N_dist() > desired_dist)
   {
-    set_motors(0, kilo_turn_right);
-    set_move_type(LEFT);
-    CalculateLocalCordinateSystem(LEFT);
+    move_left();
   }
   // if(find_nearest_N_dist() < desired_dist)
   else
   {
-    set_motors(kilo_turn_left, 0);
-    set_move_type(RIGHT);
-    CalculateLocalCordinateSystem(RIGHT);
+    move_right();
   }
 }
 
-void bhv_explorer(){
-  random_walk();
+void get_out_edge_follow(){
+  double desired_dist = 55.0;
+  mydata->edge_follow_time++;
+  desired_dist += mydata->edge_follow_time * 0.01;
+  printf("%f\n",desired_dist );
+  if (find_nearest_N_dist() > desired_dist)
+  {
+    move_left();
+  }
+  // if(find_nearest_N_dist() < desired_dist)
+  else
+  {
+    move_right();
+  }
 }
 
+void path_integration(){
+
+}
+
+void bhv_explorer()
+{
+  // random_walk();
+  // edge_follow();
+  // get_out_edge_follow();
+   
+ }
 
 void loop()
 {
@@ -360,7 +404,6 @@ void loop()
     bhv_explorer();
   }
   setup_message();
-
 }
 
 extern char *(*callback_botinfo)(void);
