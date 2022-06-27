@@ -21,7 +21,7 @@
 
 extern uint8_t NGenes;
 
-enum BOTTYPE {NEST, FOOD, NODE, EXPLORER, NODEFOOD};
+enum BOTTYPE {NEST, FOOD, NODE, EXPLORER, NODEFOOD, NODENEST};
 enum BOTSTATES {WAIT, LISTEN, MOVE};
 
 const double ONE_STEP_MOVE_DIST = 33.0 * M_PI / 660.0; //円周の長さを1kilo_tickで割ったもの
