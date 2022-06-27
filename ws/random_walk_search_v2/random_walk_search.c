@@ -29,6 +29,7 @@ typedef struct
   uint8_t move_type;             //{LEFT, RIGHT}
   uint8_t random_walk_move_type; //{LEFT, RIGHT, STARIGHT}
   uint32_t edge_follow_time;
+  uint8_t detect_food;
   double body_angle; //体の向き use EXPLORER bot
   double pos[2];     // rベクトル use EXPLORER bot
   message_t transmit_msg;
@@ -177,9 +178,10 @@ void setup()
     set_color(colorNum[1]);
     set_bot_type(EXPLORER);
     mydata->body_angle = 90.0;
-    mydata->pos[X] = 0.0;
+    mydata->pos[X] =(kilo_uid - 1) * 60.0;
     mydata->pos[Y] = 0.0;
     mydata->edge_follow_time = 0;
+    mydata->detect_food = 0;
   }
 
   set_move_type(STOP);
@@ -263,6 +265,15 @@ uint8_t find_nearest_N_dist()
   }
   return dist;
 }
+double angle_trim(double a)
+{
+  if (a < 0)
+    a = 360.0 + a;
+  if (a > 360)
+    a = a - 360.0;
+
+  return a;
+}
 
 void CalculateLocalCordinateSystem(int move_type)
 { // 0:LEFT, 1:RIGHT
@@ -306,12 +317,14 @@ void move_straight()
     set_motors(kilo_turn_left, 0);
     set_move_type(RIGHT);
     CalculateLocalCordinateSystem(RIGHT);
+    printf("move_straight - RIGHT_MOVE\n");
   }
   else
   { // get_move_type() == RIGHT
     set_motors(0, kilo_turn_right);
     set_move_type(LEFT);
     CalculateLocalCordinateSystem(LEFT);
+    printf("move_straight - LEFT_MOVE\n");
   }
 }
 
@@ -320,6 +333,8 @@ void move_stop()
 
   set_motors(0, 0);
   set_move_type(STOP);
+
+  printf("move_stop - STOP_MOVE\n");
 }
 void random_walk()
 {
@@ -331,15 +346,20 @@ void random_walk()
 
   if (mydata->random_walk_move_type == LEFT)
   {
+
+    printf("random_walk - move_left\n");
     move_left();
   }
   else if (mydata->random_walk_move_type == RIGHT)
   {
     move_right();
+    printf("random_walk - move_right\n");
   }
   else
   { // mydata->random_walk_move_type == STRAIGHT
     move_straight();
+
+    printf("random_walk - move_straight\n");
   }
 }
 
@@ -349,11 +369,13 @@ void edge_follow()
   if (find_nearest_N_dist() > desired_dist)
   {
     move_left();
+    printf("edge_follow - move_left\n");
   }
   // if(find_nearest_N_dist() < desired_dist)
   else
   {
     move_right();
+    printf("edge_follow - move_right\n");
   }
 }
 
@@ -365,25 +387,67 @@ void get_out_edge_follow(){
   if (find_nearest_N_dist() > desired_dist)
   {
     move_left();
+    printf("get_out_edge_follow - move_left\n");
   }
   // if(find_nearest_N_dist() < desired_dist)
   else
   {
     move_right();
+    printf("get_out_edge_follow - move_right\n");
   }
 }
 
-void path_integration(){
+double calculate_nest_angle(){
+  // double food_pos_x = mydata->pos[X];
+  // double food_pos_y = mydata->pos[Y];
+  // double food_angle = atan2(food_pos_y, food_pos_x);
+  // if(food_angle < 0){
+  //   food_angle = food_angle + 2.0 * M_PI;
+  // }
 
+  // food_angle = food_angle * 360.0 / (2.0 * M_PI);
+  double nest_angle = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
+  if (mydata->pos[Y] < 0){
+    nest_angle = 360.0 - nest_angle;
+  }
+
+  nest_angle = angle_trim(180 + nest_angle);
+  
+  return nest_angle;
+
+}
+
+void path_integration(){
+  if(fabs(calculate_nest_angle() - mydata->body_angle) < 1.0){
+    move_straight();
+    printf("path_integration - move_straight\n");
+  }else{
+    edge_follow();
+    printf("path_integration - edge_follow\n");
+  }
+
+  if(find_Nest() == TRUE){
+    set_bot_type(NODE);
+  }
 }
 
 void bhv_explorer()
 {
-  // random_walk();
   // edge_follow();
   // get_out_edge_follow();
-   
- }
+  if(find_Food() == TRUE){
+    mydata->detect_food = TRUE;
+  }
+
+
+
+  if(mydata->detect_food == TRUE ){
+    path_integration();
+  }else{
+    random_walk();
+  }
+
+}
 
 void loop()
 {
@@ -395,12 +459,16 @@ void loop()
   else if (get_bot_type() == NODE)
   {
     set_color(colorNum[9]); // white
+    set_motors(0, 0);
+    set_move_type(STOP);
+
   }
   else if (get_bot_type() == FOOD)
   {
   }
   else if (get_bot_type() == EXPLORER)
   {
+    printf("(pos_x, pos_y) = (%f, %f), body_angle : %f, nest_angle : %f\n", mydata->pos[X], mydata->pos[Y], mydata->body_angle, calculate_nest_angle());
     bhv_explorer();
   }
   setup_message();
