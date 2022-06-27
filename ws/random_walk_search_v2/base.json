@@ -1,0 +1,113 @@
+{
+  "bot_states": [
+    {
+      "ID": 0,
+      "direction": 3.1415926535898,
+      "state": {},
+      "x_position": 0.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 1,
+      "direction": 1.5707963267948966,
+      "state": {},
+      "x_position": 420.0,
+      "y_position": -325.33334350585938
+    },
+    {
+      "ID": 2,
+      "direction": 3.1415926535898,
+      "state": {},
+      "x_position": 60.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 3,
+      "direction": 3.1415926535898,
+      "state": {},
+      "x_position": 120.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 4,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 180.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 5,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 240.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 6,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 300.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 7,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 360.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 8,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 420.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 9,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 480.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 10,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 540.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 11,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 600.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 12,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 660.0,
+      "y_position": 0.0
+    },
+    {
+      "ID": 13,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 720.0,
+      "y_position": 0.0
+    }
+  ],
+  "ticks": 10
+}

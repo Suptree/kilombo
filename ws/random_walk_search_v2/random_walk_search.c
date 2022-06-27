@@ -1,0 +1,402 @@
+
+#include <math.h>
+#include <kilombo.h>
+#include "random_walk_search.h"
+enum
+{
+  X,
+  Y
+}; //座標を扱うときに使用
+enum
+{
+  FALSE,
+  TRUE
+}; // BOOL型のように使用
+enum
+{
+  LEFT,
+  RIGHT,
+  STRAIGHT,
+  STOP
+};
+
+typedef struct
+{
+  Neighbor_t neighbors[MAXN];
+
+  int N_Neighbors;
+  uint8_t bot_type;              //{NEST, FOOD, NODE, EXPLORER}
+  uint8_t move_type;             //{LEFT, RIGHT}
+  uint8_t random_walk_move_type; //{LEFT, RIGHT, STARIGHT}
+  double body_angle;             //体の向き use EXPLORER bot
+  double pos[2];                 // rベクトル use EXPLORER bot
+  message_t transmit_msg;
+  char message_lock;
+
+  received_message_t RXBuffer[RB_SIZE];
+  uint8_t RXHead, RXTail;
+
+} MyUserdata;
+
+REGISTER_USERDATA(MyUserdata)
+
+#ifdef SIMULATOR
+#include <stdio.h> // for printf
+#else
+#define DEBUG // for printf to serial port
+#include "debug.h"
+#endif
+
+uint8_t colorNum[] = {
+    RGB(0, 0, 0), // 0 - off
+    RGB(3, 0, 0), // 1 - red
+    RGB(0, 1, 0), // 2 - green
+    RGB(0, 0, 1), // 3 - blue
+    RGB(1, 1, 0), // 4 - yellow
+    RGB(0, 3, 3), // 5 - cyan
+    RGB(1, 0, 1), // 6 - purple
+    RGB(2, 1, 0), // 7  - orange
+    RGB(1, 1, 1), // 8  - white
+    RGB(3, 3, 3)  // 9  - bright white
+};
+
+// message rx callback function. Pushes message to ring buffer.
+void rxbuffer_push(message_t *msg, distance_measurement_t *dist)
+{
+  received_message_t *rmsg = &RB_back();
+  rmsg->msg = *msg;
+  rmsg->dist = *dist;
+  RB_pushback();
+}
+
+message_t *message_tx()
+{
+  if (mydata->message_lock)
+    return 0;
+  return &mydata->transmit_msg;
+}
+void set_bot_type(int type)
+{
+  mydata->bot_type = type;
+}
+int get_bot_type(void)
+{
+  return mydata->bot_type;
+}
+void set_move_type(int type)
+{
+  mydata->move_type = type;
+}
+int get_move_type(void)
+{
+  return mydata->move_type;
+}
+
+/* Process a received message at the front of the ring buffer.
+ * Go through the list of neighbors. If the message is from a bot
+ * already in the list, update the information, otherwise
+ * add a new entry in the list
+ */
+
+void process_message()
+{
+  uint8_t i;
+  uint16_t ID;
+
+  uint8_t *data = RB_front().msg.data;
+  ID = data[0] | (data[1] << 8);
+  uint8_t d = estimate_distance(&RB_front().dist);
+
+  // search the neighbor list by ID
+  for (i = 0; i < mydata->N_Neighbors; i++)
+    if (mydata->neighbors[i].ID == ID)
+    { // found it
+      break;
+    }
+
+  if (i == mydata->N_Neighbors)
+  {                                     // this neighbor is not in list
+    if (mydata->N_Neighbors < MAXN - 1) // if we have too many neighbors,
+      mydata->N_Neighbors++;            // we overwrite the last entry
+                                        // sloppy but better than overflow
+  }
+
+  // i now points to where this message should be stored
+  mydata->neighbors[i].ID = ID;
+  mydata->neighbors[i].timestamp = kilo_ticks;
+  mydata->neighbors[i].dist = d;
+  mydata->neighbors[i].N_Neighbors = data[2];
+  mydata->neighbors[i].n_bot_type = data[4];
+}
+
+/* Go through the list of neighbors, remove entries older than a threshold,
+ * currently 2 seconds.
+ */
+void purgeNeighbors(void)
+{
+  int8_t i;
+
+  for (i = mydata->N_Neighbors - 1; i >= 0; i--)
+    if (kilo_ticks - mydata->neighbors[i].timestamp > 64) // 32 ticks = 1 s
+    {                                                     // this one is too old.
+      mydata->neighbors[i] = mydata->neighbors[mydata->N_Neighbors - 1];
+      // replace it by the last entry
+      mydata->N_Neighbors--;
+    }
+}
+
+void setup_message(void)
+{
+  mydata->message_lock = 1; // don't transmit while we are forming the message
+  mydata->transmit_msg.type = NORMAL;
+  mydata->transmit_msg.data[0] = kilo_uid & 0xff;     // 0 low  ID
+  mydata->transmit_msg.data[1] = kilo_uid >> 8;       // 1 high ID
+  mydata->transmit_msg.data[2] = mydata->N_Neighbors; // 2 number of neighbors
+  mydata->transmit_msg.data[4] = mydata->bot_type;
+  mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
+  mydata->message_lock = 0;
+}
+
+//////////////////////////////////////   SETUP   ///////////////////////////////////////////
+void setup()
+{
+  rand_seed(kilo_uid + 1); // seed the random number generator
+  if (kilo_uid == 0)       // NEST bot
+  {
+    set_bot_type(NEST);
+    set_color(colorNum[0]); // black
+  }
+  else if (kilo_uid == 1) // NODE bot
+  {
+    set_bot_type(FOOD);
+    set_color(colorNum[5]); // cyan
+  }
+  else // EXPLORER bot
+  {
+    set_color(colorNum[1]);
+    set_bot_type(EXPLORER);
+    mydata->body_angle = 90.0;
+    mydata->pos[X] = 0.0;
+    mydata->pos[Y] = 0.0;
+  }
+
+  set_move_type(STOP);
+  mydata->message_lock = 0;
+  mydata->N_Neighbors = 0;
+  setup_message();
+}
+
+void receive_inputs()
+{
+  while (!RB_empty())
+  {
+    process_message();
+    RB_popfront();
+  }
+  purgeNeighbors();
+}
+
+uint8_t find_Explorer()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == EXPLORER && mydata->neighbors[i].ID > kilo_uid)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+uint8_t find_Nest()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == NEST)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+uint8_t find_Node()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == NODE)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+uint8_t find_Food()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == FOOD)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+uint8_t find_nearest_N_dist()
+{
+  uint8_t i;
+  uint8_t dist = 90;
+
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].dist < dist)
+    {
+      dist = mydata->neighbors[i].dist;
+    }
+  }
+  return dist;
+}
+
+void CalculateLocalCordinateSystem(int move_type)
+{ // 0:LEFT, 1:RIGHT
+  if (move_type == LEFT)
+  { //左に移動したい！
+    mydata->body_angle = mydata->body_angle - ONE_STEP_ROTATE_ANGLE;
+  }
+  else
+  { // movetype == RIGHT //右に移動したい！
+    mydata->body_angle = mydata->body_angle + ONE_STEP_ROTATE_ANGLE;
+  }
+
+  if (mydata->body_angle < 0)
+    mydata->body_angle = 360.0 + mydata->body_angle;
+  if (mydata->body_angle > 360)
+    mydata->body_angle = mydata->body_angle - 360.0;
+  mydata->pos[X] = mydata->pos[X] + ONE_STEP_MOVE_DIST * cos(mydata->body_angle * M_PI / 180.0);
+  mydata->pos[Y] = mydata->pos[Y] + ONE_STEP_MOVE_DIST * sin(mydata->body_angle * M_PI / 180.0);
+}
+
+void random_walk()
+{
+  srand(kilo_ticks + kilo_uid);
+  if (kilo_ticks % 50 == 0)
+  {                                             // 50kilo_ticksは同じ行動を取り続ける
+    mydata->random_walk_move_type = rand() % 3; // {LEFT, RIGHT, STRAIGHT}のどれかを選択
+  }
+
+  if (mydata->random_walk_move_type == LEFT)
+  {
+    set_motors(0, kilo_turn_right);
+    set_move_type(LEFT);
+    CalculateLocalCordinateSystem(LEFT);
+  }
+  else if (mydata->random_walk_move_type == RIGHT)
+  {
+    set_motors(kilo_turn_left, 0);
+    set_move_type(RIGHT);
+    CalculateLocalCordinateSystem(RIGHT);
+  }
+  else
+  { // mydata->random_walk_move_type == STRAIGHT
+    if (get_move_type() == LEFT)
+    {
+      set_motors(kilo_turn_left, 0);
+      set_move_type(RIGHT);
+      CalculateLocalCordinateSystem(RIGHT);
+    }
+    else
+    { // get_move_type() == RIGHT
+      set_motors(0, kilo_turn_right);
+      set_move_type(LEFT);
+      CalculateLocalCordinateSystem(LEFT);
+    }
+  }
+}
+
+void edge_follow()
+{
+  uint8_t desired_dist = 55;
+  if (find_nearest_N_dist() > desired_dist)
+  {
+    set_motors(0, kilo_turn_right);
+    set_move_type(LEFT);
+    CalculateLocalCordinateSystem(LEFT);
+  }
+  // if(find_nearest_N_dist() < desired_dist)
+  else
+  {
+    set_motors(kilo_turn_left, 0);
+    set_move_type(RIGHT);
+    CalculateLocalCordinateSystem(RIGHT);
+  }
+}
+
+void bhv_explorer(){
+  random_walk();
+}
+
+
+void loop()
+{
+  // receive messages
+  receive_inputs();
+  if (get_bot_type() == NEST)
+  {
+  }
+  else if (get_bot_type() == NODE)
+  {
+    set_color(colorNum[9]); // white
+  }
+  else if (get_bot_type() == FOOD)
+  {
+  }
+  else if (get_bot_type() == EXPLORER)
+  {
+    bhv_explorer();
+  }
+  setup_message();
+
+}
+
+extern char *(*callback_botinfo)(void);
+char *botinfo(void);
+
+int main(void)
+{
+  kilo_init();
+
+#ifdef DEBUG
+  // setup debugging, i.e. printf to serial port, in real Kilobot
+  debug_init();
+#endif
+
+  SET_CALLBACK(botinfo, botinfo);
+  SET_CALLBACK(reset, setup);
+
+  RB_init(); // initialize ring buffer
+  kilo_message_rx = rxbuffer_push;
+  kilo_message_tx = message_tx; // register our transmission function
+
+  kilo_start(setup, loop);
+
+  return 0;
+}
+
+#ifdef SIMULATOR
+// provide a text string for the status bar, about this bot
+static char botinfo_buffer[15000];
+char *botinfo(void)
+{
+  int n;
+  char *p = botinfo_buffer;
+  n = sprintf(p, "ID: %d, dist: %d\n", kilo_uid, find_nearest_N_dist());
+  p += n;
+
+  return botinfo_buffer;
+}
+#endif

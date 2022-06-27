@@ -40,6 +40,7 @@ typedef struct
   uint8_t food_msg_angle;
   uint8_t food_msg_angle_sign;
   uint32_t food_angle;
+  FILE *fp;
 
   message_t transmit_msg;
   char message_lock;
@@ -212,6 +213,9 @@ void setup()
   // }
   else // EXPLORER bot
   {
+    if(kilo_uid == 2){
+      mydata->fp = fopen("random_walk.dat","w");
+    }
     set_bot_type(EXPLORER);
     set_move_type(STOP);
     set_color(colorNum[1]);
@@ -564,11 +568,8 @@ void bhv_nest(){
 
 void bhv_explorer()
 {
-  if(kilo_uid == 3){
-    FILE *fp;
-    fp = fopen("cordinate.txt", "w");
-    fprintf(fp, "%f,%f\n",mydata->pos[X],mydata->pos[Y]);
-    fclose(fp);
+  if(kilo_uid == 2){
+    fprintf(mydata->fp, "%f,%f\n",mydata->pos[X],mydata->pos[Y]);
   }
   // printf("==========\n");
   set_color(colorNum[1]);
