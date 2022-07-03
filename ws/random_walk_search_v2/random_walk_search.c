@@ -223,12 +223,25 @@ void receive_inputs()
   purgeNeighbors();
 }
 
-uint8_t find_Explorer()
+uint8_t find_Explorer_by_ID()
 {
   uint8_t i;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
     if (mydata->neighbors[i].n_bot_type == EXPLORER && mydata->neighbors[i].ID > kilo_uid)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+uint8_t find_Explorer()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == EXPLORER)
     {
       return 1;
     }
@@ -501,6 +514,10 @@ void set_food_angle()
 void path_integration()
 {
   set_color(colorNum[6]); // purple
+  // if(find_Explorer() == TRUE){
+  //   get_out_edge_follow();
+  //   printf("path_integration - get_out_edge_following\n");
+  // }
   if (fabs(calculate_nest_angle() - mydata->body_angle) < 0.5)
   {
     move_straight();
@@ -526,16 +543,33 @@ void explore()
   {
     mydata->homing_flag = TRUE;
   }
+
+  // if (find_NodeNest() == TRUE || find_Nest() == TRUE)
+  // {
+  //   get_food_info();
+  //   if (mydata->received_food_info == TRUE)
+  //   {
+  //     set_color(colorNum[7]); // orage
+  //   }
+  // }
+
+  // if ((find_NodeNest() || find_Nest()) && find_nearest_N_dist() < 55)
+  // { // nestからfoodの情報が得られたらedge_followに変更
+  //   get_out_edge_follow();
+  //   mydata->homing_flag = FALSE;
+  //   mydata->random_walk_time = 0;
+
+  //   printf("explore - get_out_edge_follow\n");
+  // }
   if (find_NodeNest() == TRUE || find_Nest() == TRUE)
   {
+
     get_food_info();
     if (mydata->received_food_info == TRUE)
     {
       set_color(colorNum[7]); // orage
     }
-  }
-  if ((find_NodeNest() || find_Nest()) && find_nearest_N_dist() < 45)
-  { // nestからfoodの情報が得られたらedge_followに変更
+
     get_out_edge_follow();
     mydata->homing_flag = FALSE;
     mydata->random_walk_time = 0;
@@ -544,8 +578,15 @@ void explore()
   }
   else if (mydata->homing_flag == TRUE)
   {
-    move_straight();
-    printf("explore - move_straight\n");
+    // if(find_Explorer() == TRUE){
+    //   get_out_edge_follow();
+    //   printf("explore - get_out_edge_following\n");
+    // }else{
+
+      move_straight();
+      printf("explore - move_straight\n");
+    // }
+
   }
   else
   {
@@ -603,16 +644,16 @@ void bhv_explorer()
 
   // edge_follow();
   // get_out_edge_follow();
-  if (find_Explorer() == TRUE)
-  {
-    move_stop();
-    return;
-  }
   if (find_Food() == TRUE)
   {
     mydata->detect_food = TRUE;
   }
-  if (mydata->received_food_info == TRUE){
+
+  if (find_Explorer_by_ID() == TRUE)
+  {
+    move_stop();
+  }
+  else if (mydata->received_food_info == TRUE){
     target_path_integration();
   }
   else if (mydata->detect_food == TRUE)
