@@ -35,8 +35,10 @@ typedef struct
   uint8_t homing_flag;
   double body_angle;           //体の向き use EXPLORER bot
   double pos[2];               // rベクトル use EXPLORER bot
+  double food_pos[2];
   uint8_t food_msg_angle;      // message で使用
   uint8_t food_msg_angle_sign; // messageで使用
+  uint8_t food_msg_dist;       // messageで使用
   message_t transmit_msg;
   char message_lock;
   int cover_rate[10000][10000];
@@ -138,6 +140,7 @@ void process_message()
   mydata->neighbors[i].n_bot_type = data[3];
   mydata->neighbors[i].food_msg_angle = data[4];
   mydata->neighbors[i].food_msg_angle_sign = data[5];
+  mydata->neighbors[i].food_msg_dist = data[6];
 }
 
 /* Go through the list of neighbors, remove entries older than a threshold,
@@ -166,6 +169,7 @@ void setup_message(void)
   mydata->transmit_msg.data[3] = mydata->bot_type;
   mydata->transmit_msg.data[4] = mydata->food_msg_angle;
   mydata->transmit_msg.data[5] = mydata->food_msg_angle_sign;
+  mydata->transmit_msg.data[6] = mydata->food_msg_dist;
 
   mydata->transmit_msg.crc = message_crc(&mydata->transmit_msg);
   mydata->message_lock = 0;
@@ -195,6 +199,8 @@ void setup()
     mydata->body_angle = 90.0;
     mydata->pos[X] = (kilo_uid - 1) * 60.0;
     mydata->pos[Y] = 0.0;
+    mydata->food_pos[X] = 0.0;
+    mydata->food_pos[Y] = 0.0;
     mydata->edge_follow_time = 0;
     mydata->random_walk_time = 0;
     mydata->detect_food = 0;
@@ -202,6 +208,7 @@ void setup()
     mydata->received_food_info = 0;
     mydata->food_msg_angle = 0;
     mydata->food_msg_angle_sign = 0;
+    mydata->food_msg_dist = 0;
     if(kilo_uid == 2){
       mydata->fp = fopen("random_walk.dat","w");
     }
@@ -344,6 +351,7 @@ void get_food_info()
     {
       mydata->food_msg_angle = mydata->neighbors[i].food_msg_angle;
       mydata->food_msg_angle_sign = mydata->neighbors[i].food_msg_angle_sign;
+      mydata->food_msg_dist = mydata->neighbors[i].food_msg_dist;
       mydata->received_food_info = TRUE;
     }
   }
@@ -472,6 +480,44 @@ void get_out_edge_follow()
     printf("get_out_edge_follow - move_right\n");
   }
 }
+//messageで取得したFOODの極座標情報を用いて直交座標系におけるFOODの位置を計算
+void calculate_msg_food_info(){
+  if(mydata->received_food_info == FALSE){
+    return;
+  }
+  double food_angle = 0;
+  if(mydata->food_msg_angle_sign == 0){
+    food_angle = mydata->food_msg_angle + 180;
+  }else{
+    food_angle = mydata->food_msg_angle;
+  }
+  double food_dist = (double)(mydata->food_msg_dist)*10.0; 
+  mydata->food_pos[X] = food_dist * cos(food_angle);
+  mydata->food_pos[Y] = food_dist * sin(food_angle);
+}
+
+//自身の位置からFOODまでの角度を取得
+double calculate_self_to_food_angle(){
+  if(mydata->received_food_info == FALSE){
+    return 0;
+  }   
+
+  double food_pos_x = mydata->food_pos[X] - mydata->pos[X];
+  double food_pos_y = mydata->food_pos[Y] - mydata->pos[Y];
+  double food_angle = atan2(food_pos_y, food_pos_x);
+  if (food_angle < 0)
+  {
+    food_angle = food_angle + 2.0 * M_PI;
+  }
+
+  food_angle = food_angle * 360.0 / (2.0 * M_PI);
+
+  if (food_angle > 180)
+  {
+    food_angle = 360 - food_angle;
+  }
+  return food_angle;
+}
 
 double calculate_nest_angle()
 {
@@ -485,10 +531,15 @@ double calculate_nest_angle()
 
   return nest_angle;
 }
-void set_food_angle()
+void set_food_pos()
 {
-  double food_pos_x = mydata->pos[X];
-  double food_pos_y = mydata->pos[Y];
+  mydata->food_pos[X] = mydata->pos[X];
+  mydata->food_pos[Y] = mydata->pos[Y];
+}
+void set_msg_food_info()
+{
+  double food_pos_x = mydata->food_pos[X];
+  double food_pos_y = mydata->food_pos[Y];
   double food_angle = atan2(food_pos_y, food_pos_x);
   if (food_angle < 0)
   {
@@ -509,15 +560,15 @@ void set_food_angle()
     mydata->food_msg_angle = food_msg_angle;
     mydata->food_msg_angle_sign = 1;
   }
+  double food_dist = sqrt(pow(food_pos_x,2)+pow(food_pos_y,2));
+  mydata->food_msg_dist = (int)(food_dist / 10.0);
+  printf("food_msg_dist : %d\n", mydata->food_msg_dist);
+
 }
 
 void path_integration()
 {
   set_color(colorNum[6]); // purple
-  // if(find_Explorer() == TRUE){
-  //   get_out_edge_follow();
-  //   printf("path_integration - get_out_edge_following\n");
-  // }
   if (fabs(calculate_nest_angle() - mydata->body_angle) < 0.5)
   {
     move_straight();
@@ -526,7 +577,10 @@ void path_integration()
   else
   {
     edge_follow();
-    set_food_angle();
+    if(find_Food()==TRUE){
+      set_food_pos();
+      set_msg_food_info();
+    }
     printf("path_integration - edge_follow\n");
   }
 
@@ -544,29 +598,13 @@ void explore()
     mydata->homing_flag = TRUE;
   }
 
-  // if (find_NodeNest() == TRUE || find_Nest() == TRUE)
-  // {
-  //   get_food_info();
-  //   if (mydata->received_food_info == TRUE)
-  //   {
-  //     set_color(colorNum[7]); // orage
-  //   }
-  // }
-
-  // if ((find_NodeNest() || find_Nest()) && find_nearest_N_dist() < 55)
-  // { // nestからfoodの情報が得られたらedge_followに変更
-  //   get_out_edge_follow();
-  //   mydata->homing_flag = FALSE;
-  //   mydata->random_walk_time = 0;
-
-  //   printf("explore - get_out_edge_follow\n");
-  // }
   if (find_NodeNest() == TRUE || find_Nest() == TRUE)
   {
 
     get_food_info();
     if (mydata->received_food_info == TRUE)
     {
+      calculate_msg_food_info();
       set_color(colorNum[7]); // orage
     }
 
@@ -578,14 +616,8 @@ void explore()
   }
   else if (mydata->homing_flag == TRUE)
   {
-    // if(find_Explorer() == TRUE){
-    //   get_out_edge_follow();
-    //   printf("explore - get_out_edge_following\n");
-    // }else{
-
       move_straight();
       printf("explore - move_straight\n");
-    // }
 
   }
   else
@@ -594,21 +626,9 @@ void explore()
     printf("explore - random_walk\n");
   }
 }
-double calculate_food_angle(){
-  if(mydata->received_food_info == FALSE){
-    return 0;
-  }
-  double food_angle = 0;
-  if(mydata->food_msg_angle_sign == 0){
-    food_angle = mydata->food_msg_angle + 180;
-  }else{
-    food_angle = mydata->food_msg_angle;
-  }
-  return food_angle;
-}
 void target_path_integration(){
 
-  if (fabs(calculate_food_angle() - mydata->body_angle) < 0.5)
+  if (fabs(calculate_self_to_food_angle() - mydata->body_angle) < 0.5)
   {
     move_straight();
     printf("target_path_integration - move_straight\n");
@@ -689,7 +709,7 @@ void loop()
   }
   else if (get_bot_type() == EXPLORER)
   {
-    printf("(pos_x, pos_y) = (%f, %f), body_angle : %f, nest_angle : %f, food_angle : %f\n", mydata->pos[X], mydata->pos[Y], mydata->body_angle, calculate_nest_angle(), calculate_food_angle());
+    printf("(pos_x, pos_y) = (%f, %f), body_angle : %f, nest_angle : %f, food_angle : %f\n", mydata->pos[X], mydata->pos[Y], mydata->body_angle, calculate_nest_angle(), calculate_self_to_food_angle());
     bhv_explorer();
   }
   setup_message();
@@ -726,7 +746,9 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d, dist: %d, food_angle : %f\n", kilo_uid, find_nearest_N_dist(), calculate_food_angle());
+  n = sprintf(p, "ID: %d, dist: %d, body_angle  : %f, food_angle : %f\n \
+                  food_msg_angle : %d, food_msg_dist : %d\n", kilo_uid, find_nearest_N_dist(), mydata->body_angle, calculate_self_to_food_angle(),mydata->food_msg_angle, mydata->food_msg_dist);
+
   p += n;
 
   return botinfo_buffer;
