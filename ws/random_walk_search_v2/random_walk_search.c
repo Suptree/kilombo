@@ -1,6 +1,7 @@
 
 #include <math.h>
 #include <kilombo.h>
+#include <signal.h>
 #include "random_walk_search.h"
 enum
 {
@@ -42,6 +43,8 @@ typedef struct
   message_t transmit_msg;
   char message_lock;
   int cover_rate[10000][10000];
+  int walk_rate[100000];
+  int walk_count;
   FILE *fp;
 
   received_message_t RXBuffer[RB_SIZE];
@@ -178,7 +181,7 @@ void setup_message(void)
 //////////////////////////////////////   SETUP   ///////////////////////////////////////////
 void setup()
 {
-  rand_seed(kilo_uid + 1); // seed the random number generator
+  rand_seed(kilo_uid); // seed the random number generator
   if (kilo_uid == 0)       // NEST bot
   {
     mydata->received_food_info = 0;
@@ -209,8 +212,9 @@ void setup()
     mydata->food_msg_angle = 0;
     mydata->food_msg_angle_sign = 0;
     mydata->food_msg_dist = 0;
+    mydata->walk_count = 0;
     if(kilo_uid == 2){
-      mydata->fp = fopen("random_walk.dat","w");
+      mydata->fp = fopen("random_walk_rate.dat","w");
     }
   }
 
@@ -425,6 +429,14 @@ void random_walk()
   if (kilo_ticks % 50 == 0)
   {                                             // 50kilo_ticksは同じ行動を取り続ける
     mydata->random_walk_move_type = rand() % 3; // {LEFT, RIGHT, STRAIGHT}のどれかを選択
+    if(mydata->random_walk_move_type == STRAIGHT){
+      mydata->walk_count++;
+    }else{
+      if(mydata->walk_count != 0){
+        mydata->walk_rate[mydata->walk_count]++; 
+        mydata->walk_count = 0;
+      }
+    }
   }
 
   if (mydata->random_walk_move_type == LEFT)
@@ -718,6 +730,12 @@ void loop()
 extern char *(*callback_botinfo)(void);
 char *botinfo(void);
 
+void random_walk_rate_handler(){
+ 
+  for(int i = 0; i < 10000; i++){
+    fprintf(mydata->fp,"%d\n", mydata->walk_rate[i]);
+  }
+}
 int main(void)
 {
   kilo_init();
@@ -735,7 +753,7 @@ int main(void)
   kilo_message_tx = message_tx; // register our transmission function
 
   kilo_start(setup, loop);
-
+  signal(SIGINT, random_walk_rate_handler);
   return 0;
 }
 
