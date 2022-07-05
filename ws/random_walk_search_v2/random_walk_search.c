@@ -62,16 +62,17 @@ REGISTER_USERDATA(MyUserdata)
 #endif
 
 uint8_t colorNum[] = {
-    RGB(0, 0, 0), // 0 - off
-    RGB(3, 0, 0), // 1 - red
+    RGB(0, 0, 0), // 0 - off // nest
+    RGB(3, 0, 0), // 1 - red // explorer
     RGB(0, 1, 0), // 2 - green
     RGB(0, 0, 1), // 3 - blue
-    RGB(3, 3, 0), // 4 - yellow
-    RGB(0, 3, 3), // 5 - cyan
-    RGB(3, 0, 3), // 6 - purple
-    RGB(3, 1, 0), // 7  - orange
+    RGB(3, 3, 0), // 4 - yellow // receive food nest
+    RGB(0, 3, 3), // 5 - cyan // food
+    RGB(3, 0, 3), // 6 - purple // detected food explorer
+    RGB(3, 1, 0), // 7  - orange // receive food explorer
     RGB(1, 1, 1), // 8  - white
-    RGB(3, 3, 3)  // 9  - bright white
+    RGB(3, 3, 3),  // 9  - bright white // node
+    RGB(0, 3, 0), // 10 - bright green
 };
 
 // message rx callback function. Pushes message to ring buffer.
@@ -499,13 +500,14 @@ void calculate_msg_food_info(){
   }
   double food_angle = 0;
   if(mydata->food_msg_angle_sign == 0){
-    food_angle = mydata->food_msg_angle + 180;
+    food_angle = 360 - mydata->food_msg_angle;
+    printf("food angle !!!! : %f\n", food_angle);
   }else{
     food_angle = mydata->food_msg_angle;
   }
   double food_dist = (double)(mydata->food_msg_dist)*10.0; 
-  mydata->food_pos[X] = food_dist * cos(food_angle);
-  mydata->food_pos[Y] = food_dist * sin(food_angle);
+  mydata->food_pos[X] = food_dist * cos(food_angle*(M_PI/180.0));
+  mydata->food_pos[Y] = food_dist * sin(food_angle*(M_PI/180.0));
 }
 
 //自身の位置からFOODまでの角度を取得
@@ -523,11 +525,11 @@ double calculate_self_to_food_angle(){
   }
 
   food_angle = food_angle * 360.0 / (2.0 * M_PI);
-
-  if (food_angle > 180)
-  {
-    food_angle = 360 - food_angle;
-  }
+  printf("===========================\n%f\n",food_angle);
+  // if (food_angle > 180)
+  // {
+  //   food_angle = 360 - food_angle;
+  // }
   return food_angle;
 }
 
@@ -563,7 +565,6 @@ void set_msg_food_info()
 
   if (food_angle > 180)
   {
-    food_angle = 360 - food_angle;
     mydata->food_msg_angle = 360 - food_msg_angle;
     mydata->food_msg_angle_sign = 0;
   }
@@ -712,7 +713,12 @@ void loop()
   }
   else if (get_bot_type() == NODENEST || get_bot_type() == NODEFOOD)
   {
-    set_color(colorNum[9]); // white
+    if(get_bot_type() == NODENEST){
+      set_color(colorNum[2]); //green
+    }else{
+
+    set_color(colorNum[10]); // white
+    }
     set_motors(0, 0);
     set_move_type(STOP);
   }
@@ -764,8 +770,7 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d, dist: %d, body_angle  : %f, food_angle : %f\n \
-                  food_msg_angle : %d, food_msg_dist : %d\n", kilo_uid, find_nearest_N_dist(), mydata->body_angle, calculate_self_to_food_angle(),mydata->food_msg_angle, mydata->food_msg_dist);
+  n = sprintf(p, "ID: %d, dist: %d, body_angle  : %f, food_angle : %f\nfood_msg_angle : %d, food_msg_dist : %d, food_pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(), mydata->body_angle, calculate_self_to_food_angle(),mydata->food_msg_angle, mydata->food_msg_dist, mydata->food_pos[X], mydata->food_pos[Y]);
 
   p += n;
 
