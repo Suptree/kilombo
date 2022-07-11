@@ -34,6 +34,7 @@ typedef struct
   uint8_t detect_food;
   uint8_t received_food_info;
   uint8_t homing_flag;
+  uint8_t cant_search_target;
   double body_angle;           //体の向き use EXPLORER bot
   double pos[2];               // rベクトル use EXPLORER bot
   double food_pos[2];
@@ -213,6 +214,7 @@ void setup()
     mydata->food_msg_angle = 0;
     mydata->food_msg_angle_sign = 0;
     mydata->food_msg_dist = 0;
+    mydata->cant_search_target = FALSE;
     mydata->walk_count = 0;
     if(kilo_uid == 2){
       mydata->fp = fopen("random_walk_rate.dat","w");
@@ -532,6 +534,20 @@ double calculate_self_to_food_angle(){
   // }
   return food_angle;
 }
+//自身の位置からFOODまでの角度を取得
+double calculate_self_to_food_dist(){
+  if(mydata->received_food_info == FALSE){
+    return 0;
+  }   
+
+  double self_to_food_dist = 0;
+  double diff_x = mydata->food_pos[X] - mydata->pos[X];
+  double diff_y = mydata->food_pos[Y] - mydata->pos[Y];
+
+  self_to_food_dist = sqrt(pow(diff_x, 2.0) + pow(diff_y, 2.0));
+  printf("self to food dist : %f\n", self_to_food_dist);
+  return self_to_food_dist;
+}
 
 double calculate_nest_angle()
 {
@@ -581,7 +597,7 @@ void set_msg_food_info()
 
 void path_integration()
 {
-  set_color(colorNum[6]); // purple
+  set_color(colorNum[4]); // purple
   if (fabs(calculate_nest_angle() - mydata->body_angle) < 0.5)
   {
     move_straight();
@@ -602,6 +618,7 @@ void path_integration()
     set_bot_type(NODENEST);
   }
 }
+
 
 void explore()
 {
@@ -645,9 +662,17 @@ void explore()
   }
 }
 void target_path_integration(){
-
-  if (fabs(calculate_self_to_food_angle() - mydata->body_angle) < 0.5)
+  if(mydata->cant_search_target == TRUE){
+    random_walk();
+    
+    printf("target_path_integration - random_walk\n");
+  }
+  else if (fabs(calculate_self_to_food_angle() - mydata->body_angle) < 0.5)
   {
+    if(calculate_self_to_food_dist() < 1.0){
+      // can't search target 
+      mydata->cant_search_target = TRUE;
+    }
     move_straight();
     printf("target_path_integration - move_straight\n");
   }
@@ -713,7 +738,7 @@ void loop()
     get_food_info();
     if (mydata->received_food_info == TRUE)
     {
-      set_color(colorNum[4]); // yellow
+      set_color(colorNum[10]); // bright green
     }
   }
   else if (get_bot_type() == NODENEST || get_bot_type() == NODEFOOD)
@@ -722,7 +747,7 @@ void loop()
       set_color(colorNum[2]); //green
     }else{
 
-    set_color(colorNum[10]); // white
+    set_color(colorNum[3]); // bright green
     }
     set_motors(0, 0);
     set_move_type(STOP);
