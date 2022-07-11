@@ -635,8 +635,13 @@ void explore()
   }
   else
   {
-    random_walk();
-    printf("explore - random_walk\n");
+    if(find_Explorer()== TRUE ){
+      get_out_edge_follow();
+      printf("explore - get_out_edge_follow\n");
+    }else{
+      random_walk();
+      printf("explore - random_walk\n");
+    }
   }
 }
 void target_path_integration(){
