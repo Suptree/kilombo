@@ -563,8 +563,11 @@ double calculate_nest_angle()
 }
 void set_food_pos()
 {
-  mydata->food_pos[X] = mydata->pos[X];
-  mydata->food_pos[Y] = mydata->pos[Y];
+  // mydata->food_pos[X] = mydata->pos[X];
+  // mydata->food_pos[Y] = mydata->pos[Y];
+
+  mydata->food_pos[X] = 420.0;
+  mydata->food_pos[Y] = -325.0;
 }
 void set_msg_food_info()
 {
