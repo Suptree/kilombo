@@ -35,8 +35,8 @@ typedef struct
   uint8_t received_food_info;
   uint8_t homing_flag;
   uint8_t cant_search_target;
-  double body_angle;           //体の向き use EXPLORER bot
-  double pos[2];               // rベクトル use EXPLORER bot
+  double body_angle; //体の向き use EXPLORER bot
+  double pos[2];     // rベクトル use EXPLORER bot
   double food_pos[2];
   uint8_t food_msg_angle;      // message で使用
   uint8_t food_msg_angle_sign; // messageで使用
@@ -72,7 +72,7 @@ uint8_t colorNum[] = {
     RGB(3, 0, 3), // 6 - purple // detected food explorer
     RGB(3, 1, 0), // 7  - orange // receive food explorer
     RGB(1, 1, 1), // 8  - white
-    RGB(3, 3, 3),  // 9  - bright white // node
+    RGB(3, 3, 3), // 9  - bright white // node
     RGB(0, 3, 0), // 10 - bright green
 };
 
@@ -184,7 +184,7 @@ void setup_message(void)
 void setup()
 {
   rand_seed(kilo_uid); // seed the random number generator
-  if (kilo_uid == 0)       // NEST bot
+  if (kilo_uid == 0)   // NEST bot
   {
     mydata->received_food_info = 0;
     mydata->food_msg_angle = 0;
@@ -216,8 +216,9 @@ void setup()
     mydata->food_msg_dist = 0;
     mydata->cant_search_target = FALSE;
     mydata->walk_count = 0;
-    if(kilo_uid == 2){
-      mydata->fp = fopen("random_walk_rate.dat","w");
+    if (kilo_uid == 2)
+    {
+      mydata->fp = fopen("random_walk_rate.dat", "w");
     }
   }
 
@@ -256,6 +257,18 @@ uint8_t find_Explorer()
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
     if (mydata->neighbors[i].n_bot_type == EXPLORER)
+    {
+      return 1;
+    }
+  }
+  return 0;
+}
+uint8_t find_PIExplorer()
+{
+  uint8_t i;
+  for (i = 0; i < mydata->N_Neighbors; i++)
+  {
+    if (mydata->neighbors[i].n_bot_type == PIEXPLORER)
     {
       return 1;
     }
@@ -432,11 +445,15 @@ void random_walk()
   if (kilo_ticks % 50 == 0)
   {                                             // 50kilo_ticksは同じ行動を取り続ける
     mydata->random_walk_move_type = rand() % 3; // {LEFT, RIGHT, STRAIGHT}のどれかを選択
-    if(mydata->random_walk_move_type == STRAIGHT){
+    if (mydata->random_walk_move_type == STRAIGHT)
+    {
       mydata->walk_count++;
-    }else{
-      if(mydata->walk_count != 0){
-        mydata->walk_rate[mydata->walk_count]++; 
+    }
+    else
+    {
+      if (mydata->walk_count != 0)
+      {
+        mydata->walk_rate[mydata->walk_count]++;
         mydata->walk_count = 0;
       }
     }
@@ -495,28 +512,35 @@ void get_out_edge_follow()
     printf("get_out_edge_follow - move_right\n");
   }
 }
-//messageで取得したFOODの極座標情報を用いて直交座標系におけるFOODの位置を計算
-void calculate_msg_food_info(){
-  if(mydata->received_food_info == FALSE){
+// messageで取得したFOODの極座標情報を用いて直交座標系におけるFOODの位置を計算
+void calculate_msg_food_info()
+{
+  if (mydata->received_food_info == FALSE)
+  {
     return;
   }
   double food_angle = 0;
-  if(mydata->food_msg_angle_sign == 0){
+  if (mydata->food_msg_angle_sign == 0)
+  {
     food_angle = 360 - mydata->food_msg_angle;
     printf("food angle !!!! : %f\n", food_angle);
-  }else{
+  }
+  else
+  {
     food_angle = mydata->food_msg_angle;
   }
-  double food_dist = (double)(mydata->food_msg_dist)*10.0; 
-  mydata->food_pos[X] = food_dist * cos(food_angle*(M_PI/180.0));
-  mydata->food_pos[Y] = food_dist * sin(food_angle*(M_PI/180.0));
+  double food_dist = (double)(mydata->food_msg_dist) * 10.0;
+  mydata->food_pos[X] = food_dist * cos(food_angle * (M_PI / 180.0));
+  mydata->food_pos[Y] = food_dist * sin(food_angle * (M_PI / 180.0));
 }
 
 //自身の位置からFOODまでの角度を取得
-double calculate_self_to_food_angle(){
-  if(mydata->received_food_info == FALSE){
+double calculate_self_to_food_angle()
+{
+  if (mydata->received_food_info == FALSE)
+  {
     return 0;
-  }   
+  }
 
   double food_pos_x = mydata->food_pos[X] - mydata->pos[X];
   double food_pos_y = mydata->food_pos[Y] - mydata->pos[Y];
@@ -527,7 +551,7 @@ double calculate_self_to_food_angle(){
   }
 
   food_angle = food_angle * 360.0 / (2.0 * M_PI);
-  printf("===========================\n%f\n",food_angle);
+  printf("===========================\n%f\n", food_angle);
   // if (food_angle > 180)
   // {
   //   food_angle = 360 - food_angle;
@@ -535,10 +559,12 @@ double calculate_self_to_food_angle(){
   return food_angle;
 }
 //自身の位置からFOODまでの角度を取得
-double calculate_self_to_food_dist(){
-  if(mydata->received_food_info == FALSE){
+double calculate_self_to_food_dist()
+{
+  if (mydata->received_food_info == FALSE)
+  {
     return 0;
-  }   
+  }
 
   double self_to_food_dist = 0;
   double diff_x = mydata->food_pos[X] - mydata->pos[X];
@@ -563,11 +589,11 @@ double calculate_nest_angle()
 }
 void set_food_pos()
 {
-  // mydata->food_pos[X] = mydata->pos[X];
-  // mydata->food_pos[Y] = mydata->pos[Y];
+  mydata->food_pos[X] = mydata->pos[X];
+  mydata->food_pos[Y] = mydata->pos[Y];
 
-  mydata->food_pos[X] = 420.0;
-  mydata->food_pos[Y] = -325.0;
+  // mydata->food_pos[X] = 420.0;
+  // mydata->food_pos[Y] = -325.0;
 }
 void set_msg_food_info()
 {
@@ -592,10 +618,9 @@ void set_msg_food_info()
     mydata->food_msg_angle = food_msg_angle;
     mydata->food_msg_angle_sign = 1;
   }
-  double food_dist = sqrt(pow(food_pos_x,2)+pow(food_pos_y,2));
+  double food_dist = sqrt(pow(food_pos_x, 2) + pow(food_pos_y, 2));
   mydata->food_msg_dist = (int)(food_dist / 10.0);
   printf("food_msg_dist : %d\n", mydata->food_msg_dist);
-
 }
 
 void path_integration()
@@ -603,13 +628,22 @@ void path_integration()
   set_color(colorNum[4]); // purple
   if (fabs(calculate_nest_angle() - mydata->body_angle) < 0.5)
   {
-    move_straight();
+    set_bot_type(PIEXPLORER);
+    if (find_Explorer() == TRUE)
+    {
+      move_stop();
+    }
+    else
+    {
+      move_straight();
+    }
     printf("path_integration - move_straight\n");
   }
   else
   {
     edge_follow();
-    if(find_Food()==TRUE){
+    if (find_Food() == TRUE)
+    {
       set_food_pos();
       set_msg_food_info();
     }
@@ -618,10 +652,11 @@ void path_integration()
 
   if (find_Nest() == TRUE || find_NodeNest() == TRUE)
   {
-    set_bot_type(NODENEST);
+    // set_bot_type(NODENEST);
+    mydata->received_food_info = TRUE;
+    // mydata->detect_food = FALSE;
   }
 }
-
 
 void explore()
 {
@@ -640,7 +675,8 @@ void explore()
       calculate_msg_food_info();
       set_color(colorNum[7]); // orage
     }
-
+    mydata->pos[X] = 0.0;
+    mydata->pos[Y] = 0.0;
     get_out_edge_follow();
     mydata->homing_flag = FALSE;
     mydata->random_walk_time = 0;
@@ -649,46 +685,71 @@ void explore()
   }
   else if (mydata->homing_flag == TRUE)
   {
+    if (fabs(calculate_nest_angle() - mydata->body_angle) < 1.0)
+    {
       move_straight();
       printf("explore - move_straight\n");
-
+    }
+    else
+    {
+      edge_follow();
+      printf("explore - edge_follow\n");
+    }
   }
   else
   {
-    if(find_Explorer()== TRUE ){
+    if (find_Explorer() == TRUE || find_PIExplorer() == TRUE)
+    {
       get_out_edge_follow();
+      // move_straight();
       printf("explore - get_out_edge_follow\n");
-    }else{
+    }
+    else
+    {
       random_walk();
       printf("explore - random_walk\n");
     }
   }
 }
-void target_path_integration(){
-  if(mydata->cant_search_target == TRUE){
+void target_path_integration()
+{
+  if (mydata->cant_search_target == TRUE)
+  {
     random_walk();
-    
+    set_bot_type(EXPLORER);
+
     printf("target_path_integration - random_walk\n");
   }
   else if (fabs(calculate_self_to_food_angle() - mydata->body_angle) < 0.5)
   {
-    if(calculate_self_to_food_dist() < 1.0){
-      // can't search target 
+    if (calculate_self_to_food_dist() < 1.0)
+    {
+      // can't search target
       mydata->cant_search_target = TRUE;
     }
-    move_straight();
+    set_bot_type(PIEXPLORER);
+
+    if (find_Explorer() == TRUE)
+    {
+      move_stop();
+    }
+    else
+    {
+      move_straight();
+    }
     printf("target_path_integration - move_straight\n");
   }
   else
   {
+    // set_bot_type(EXPLORER);
     edge_follow();
     printf("target_path_integration - edge_follow\n");
   }
 
-  if(find_Food() == TRUE || find_NodeFood() == TRUE){
+  if (find_Food() == TRUE || find_NodeFood() == TRUE)
+  {
     set_bot_type(NODEFOOD);
   }
-
 }
 void bhv_explorer()
 {
@@ -707,7 +768,6 @@ void bhv_explorer()
   //   printf("cover rate : %f\n", (double)count / 1000000.0);
   // }
 
-
   // edge_follow();
   // get_out_edge_follow();
   if (find_Food() == TRUE)
@@ -718,8 +778,10 @@ void bhv_explorer()
   if (find_Explorer_by_ID() == TRUE)
   {
     move_stop();
+    // get_out_edge_follow();
   }
-  else if (mydata->received_food_info == TRUE){
+  else if (mydata->received_food_info == TRUE)
+  {
     target_path_integration();
   }
   else if (mydata->detect_food == TRUE)
@@ -746,11 +808,14 @@ void loop()
   }
   else if (get_bot_type() == NODENEST || get_bot_type() == NODEFOOD)
   {
-    if(get_bot_type() == NODENEST){
-      set_color(colorNum[2]); //green
-    }else{
+    if (get_bot_type() == NODENEST)
+    {
+      set_color(colorNum[2]); // green
+    }
+    else
+    {
 
-    set_color(colorNum[3]); // bright green
+      set_color(colorNum[3]); // bright green
     }
     set_motors(0, 0);
     set_move_type(STOP);
@@ -758,7 +823,7 @@ void loop()
   else if (get_bot_type() == FOOD)
   {
   }
-  else if (get_bot_type() == EXPLORER)
+  else if (get_bot_type() == EXPLORER || get_bot_type() == PIEXPLORER)
   {
     printf("(pos_x, pos_y) = (%f, %f), body_angle : %f, nest_angle : %f, food_angle : %f\n", mydata->pos[X], mydata->pos[Y], mydata->body_angle, calculate_nest_angle(), calculate_self_to_food_angle());
     bhv_explorer();
@@ -769,10 +834,12 @@ void loop()
 extern char *(*callback_botinfo)(void);
 char *botinfo(void);
 
-void random_walk_rate_handler(){
- 
-  for(int i = 0; i < 10000; i++){
-    fprintf(mydata->fp,"%d\n", mydata->walk_rate[i]);
+void random_walk_rate_handler()
+{
+
+  for (int i = 0; i < 10000; i++)
+  {
+    fprintf(mydata->fp, "%d\n", mydata->walk_rate[i]);
   }
 }
 int main(void)
@@ -803,7 +870,7 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d, dist: %d, body_angle  : %f, food_angle : %f\nfood_msg_angle : %d, food_msg_dist : %d, food_pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(), mydata->body_angle, calculate_self_to_food_angle(),mydata->food_msg_angle, mydata->food_msg_dist, mydata->food_pos[X], mydata->food_pos[Y]);
+  n = sprintf(p, "ID: %d, dist: %d, body_angle  : %f, food_angle : %f\nfood_msg_angle : %d, food_msg_dist : %d, food_pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(), mydata->body_angle, calculate_self_to_food_angle(), mydata->food_msg_angle, mydata->food_msg_dist, mydata->food_pos[X], mydata->food_pos[Y]);
 
   p += n;
 
