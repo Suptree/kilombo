@@ -202,8 +202,35 @@ void setup()
     set_color(colorNum[1]);
     set_bot_type(EXPLORER);
     mydata->body_angle = 90.0;
-    mydata->pos[X] = (kilo_uid - 1) * 60.0;
-    mydata->pos[Y] = 0.0;
+    for (int i = 0; i < 3; i++)
+    {
+      for (int j = 0; j < 3; j++)
+      {
+        if (kilo_uid == (i + 1) + 1 + (j * 3))
+        {
+          mydata->pos[X] = -120.0 + (double)i * 120.0;
+          mydata->pos[Y] = 120.0 + (double)j * -120.0;
+        }
+      }
+    }
+    // if (kilo_uid == 2)
+    // {
+    //   mydata->pos[X] = 60.0;
+    //   mydata->pos[Y] = 0.0;
+    // }
+    // else if (kilo_uid == 3)
+    // {
+
+    //   mydata->pos[X] = 0.0;
+    //   mydata->pos[Y] = 60.0;
+    // }
+    // else if (kilo_uid == 4)
+    // {
+    //   mydata->pos[X] = 0.0;
+    //   mydata->pos[Y] = -60.0;
+    // }
+    // mydata->pos[X] = (kilo_uid - 1) * 60.0;
+    // mydata->pos[Y] = 0.0;
     mydata->food_pos[X] = 0.0;
     mydata->food_pos[Y] = 0.0;
     mydata->edge_follow_time = 0;
@@ -243,7 +270,7 @@ uint8_t find_Explorer_by_ID()
   uint8_t i;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if (mydata->neighbors[i].n_bot_type == EXPLORER && mydata->neighbors[i].ID > kilo_uid)
+    if (mydata->neighbors[i].n_bot_type == EXPLORER && mydata->neighbors[i].ID >= kilo_uid)
     {
       return 1;
     }
@@ -441,7 +468,7 @@ void move_stop()
 void random_walk()
 {
   mydata->random_walk_time++;
-  srand(kilo_ticks + kilo_uid);
+  srand(kilo_ticks + kilo_uid + 1);
   if (kilo_ticks % 50 == 0)
   {                                             // 50kilo_ticksは同じ行動を取り続ける
     mydata->random_walk_move_type = rand() % 3; // {LEFT, RIGHT, STRAIGHT}のどれかを選択
@@ -685,7 +712,7 @@ void explore()
   }
   else if (mydata->homing_flag == TRUE)
   {
-    if (fabs(calculate_nest_angle() - mydata->body_angle) < 1.0)
+    if (fabs(calculate_nest_angle() - mydata->body_angle) < 4.0)
     {
       move_straight();
       printf("explore - move_straight\n");
