@@ -202,33 +202,55 @@ void setup()
     set_color(colorNum[1]);
     set_bot_type(EXPLORER);
     mydata->body_angle = 90.0;
-    for (int i = 0; i < 3; i++)
-    {
-      for (int j = 0; j < 3; j++)
-      {
-        if (kilo_uid == (i + 1) + 1 + (j * 3))
-        {
-          mydata->pos[X] = -120.0 + (double)i * 120.0;
-          mydata->pos[Y] = 120.0 + (double)j * -120.0;
-        }
-      }
-    }
-    // if (kilo_uid == 2)
+    
+    // /* d_500 */
+    // for (int i = 0; i < 5; i++)
     // {
-    //   mydata->pos[X] = 60.0;
-    //   mydata->pos[Y] = 0.0;
+    //   for (int j = 0; j < 5; j++)
+    //   {
+    //     if (kilo_uid == (i + 1) + 1 + (j * 5))
+    //     {
+    //       mydata->pos[X] = -120.0 + (double)i * 60.0;
+    //       mydata->pos[Y] =-120.0 + (double)j * 60.0;
+    //     }
+    //   }
     // }
-    // else if (kilo_uid == 3)
-    // {
 
-    //   mydata->pos[X] = 0.0;
-    //   mydata->pos[Y] = 60.0;
-    // }
-    // else if (kilo_uid == 4)
+    // /* d_500 */
+    // for (int i = 0; i < 3; i++)
     // {
-    //   mydata->pos[X] = 0.0;
-    //   mydata->pos[Y] = -60.0;
+    //   for (int j = 0; j < 3; j++)
+    //   {
+    //     if (kilo_uid == (i + 1) + 1 + (j * 3))
+    //     {
+    //       mydata->pos[X] = -120.0 + (double)i * 120.0;
+    //       mydata->pos[Y] =-120.0 + (double)j * 120.0;
+    //     }
+    //   }
     // }
+    
+    // /* d_150 */
+    if (kilo_uid == 2)
+    {
+      mydata->pos[X] = 60.0;
+      mydata->pos[Y] = 0.0;
+    }
+    else if (kilo_uid == 3)
+    {
+
+      mydata->pos[X] = 0.0;
+      mydata->pos[Y] = 60.0;
+    }
+    else if (kilo_uid == 4)
+    {
+      mydata->pos[X] = 0.0;
+      mydata->pos[Y] = -60.0;
+    }
+    else if(kilo_uid == 5){
+
+      mydata->pos[X] = -60.0;
+      mydata->pos[Y] = 0.0;
+    }
     // mydata->pos[X] = (kilo_uid - 1) * 60.0;
     // mydata->pos[Y] = 0.0;
     mydata->food_pos[X] = 0.0;
@@ -270,7 +292,7 @@ uint8_t find_Explorer_by_ID()
   uint8_t i;
   for (i = 0; i < mydata->N_Neighbors; i++)
   {
-    if (mydata->neighbors[i].n_bot_type == EXPLORER && mydata->neighbors[i].ID >= kilo_uid)
+    if (mydata->neighbors[i].n_bot_type == EXPLORER && mydata->neighbors[i].ID > kilo_uid)
     {
       return 1;
     }
@@ -468,7 +490,7 @@ void move_stop()
 void random_walk()
 {
   mydata->random_walk_time++;
-  srand(kilo_ticks + kilo_uid + 1);
+  srand(kilo_ticks + kilo_uid + 2);
   if (kilo_ticks % 50 == 0)
   {                                             // 50kilo_ticksは同じ行動を取り続ける
     mydata->random_walk_move_type = rand() % 3; // {LEFT, RIGHT, STRAIGHT}のどれかを選択
@@ -604,14 +626,23 @@ double calculate_self_to_food_dist()
 
 double calculate_nest_angle()
 {
-  double nest_angle = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
-  if (mydata->pos[Y] < 0)
+  // double nest_angle = acos(mydata->pos[X] / sqrt(pow(mydata->pos[X], 2) + pow(mydata->pos[Y], 2)) * sqrt(pow(1.0, 2) + pow(0.0, 2))) * 180.0 / M_PI;
+  // if (mydata->pos[Y] < 0)
+  // {
+  //   nest_angle = 360.0 - nest_angle;
+  // }
+
+  // nest_angle = angle_trim(180 + nest_angle);
+
+  double nest_pos_x = -mydata->pos[X];
+  double nest_pos_y = -mydata->pos[Y];
+  double nest_angle = atan2(nest_pos_y, nest_pos_x);
+  if (nest_angle < 0)
   {
-    nest_angle = 360.0 - nest_angle;
+    nest_angle = nest_angle + 2.0 * M_PI;
   }
 
-  nest_angle = angle_trim(180 + nest_angle);
-
+  nest_angle = nest_angle * 360.0 / (2.0 * M_PI);
   return nest_angle;
 }
 void set_food_pos()
@@ -897,7 +928,7 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d, dist: %d, body_angle  : %f, food_angle : %f\nfood_msg_angle : %d, food_msg_dist : %d, food_pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(), mydata->body_angle, calculate_self_to_food_angle(), mydata->food_msg_angle, mydata->food_msg_dist, mydata->food_pos[X], mydata->food_pos[Y]);
+  n = sprintf(p, "ID: %d, dist: %d, pos : (%f, %f), body_angle  : %f, food_angle : %f\nfood_msg_angle : %d, food_msg_dist : %d, food_pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(),mydata->pos[X], mydata->pos[Y], mydata->body_angle, calculate_self_to_food_angle(), mydata->food_msg_angle, mydata->food_msg_dist, mydata->food_pos[X], mydata->food_pos[Y]);
 
   p += n;
 
