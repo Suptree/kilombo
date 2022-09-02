@@ -80,6 +80,28 @@
       "state": {},
       "x_position":120.0,
       "y_position": -120.0
+    },
+    {
+      "ID": 11,
+      "direction": 3.1415926535898,
+      "state": {},
+      "x_position": -120.0,
+      "y_position": -240.0
+    },
+    {
+      "ID": 12,
+      "direction": 3.1415926535898,
+
+      "state": {},
+      "x_position": 0.0,
+      "y_position": -240.0
+    },
+    {
+      "ID": 13,
+      "direction": 3.1415926535898,
+      "state": {},
+      "x_position":120.0,
+      "y_position": -240.0
     }
 
   ],

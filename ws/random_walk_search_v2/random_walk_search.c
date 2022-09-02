@@ -202,8 +202,8 @@ void setup()
     set_color(colorNum[1]);
     set_bot_type(EXPLORER);
     mydata->body_angle = 90.0;
-    
-    // /* d_500 */
+
+    // /* d_700 */
     // for (int i = 0; i < 5; i++)
     // {
     //   for (int j = 0; j < 5; j++)
@@ -217,40 +217,40 @@ void setup()
     // }
 
     // /* d_500 */
-    // for (int i = 0; i < 3; i++)
-    // {
-    //   for (int j = 0; j < 3; j++)
-    //   {
-    //     if (kilo_uid == (i + 1) + 1 + (j * 3))
-    //     {
-    //       mydata->pos[X] = -120.0 + (double)i * 120.0;
-    //       mydata->pos[Y] =-120.0 + (double)j * 120.0;
-    //     }
-    //   }
-    // }
-    
+    for (int i = 0; i < 3; i++)
+    {
+      for (int j = 0; j < 4; j++)
+      {
+        if (kilo_uid == (i + 1) + 1 + (j * 3))
+        {
+          mydata->pos[X] = -120.0 + (double)i * 120.0;
+          mydata->pos[Y] = -120.0 + (double)j * 120.0;
+        }
+      }
+    }
+
     // /* d_150 */
-    if (kilo_uid == 2)
-    {
-      mydata->pos[X] = 60.0;
-      mydata->pos[Y] = 0.0;
-    }
-    else if (kilo_uid == 3)
-    {
+    // if (kilo_uid == 2)
+    // {
+    //   mydata->pos[X] = 60.0;
+    //   mydata->pos[Y] = 0.0;
+    // }
+    // else if (kilo_uid == 3)
+    // {
 
-      mydata->pos[X] = 0.0;
-      mydata->pos[Y] = 60.0;
-    }
-    else if (kilo_uid == 4)
-    {
-      mydata->pos[X] = 0.0;
-      mydata->pos[Y] = -60.0;
-    }
-    else if(kilo_uid == 5){
+    //   mydata->pos[X] = 0.0;
+    //   mydata->pos[Y] = 60.0;
+    // }
+    // else if (kilo_uid == 4)
+    // {
+    //   mydata->pos[X] = 0.0;
+    //   mydata->pos[Y] = -60.0;
+    // }
+    // else if(kilo_uid == 5){
 
-      mydata->pos[X] = -60.0;
-      mydata->pos[Y] = 0.0;
-    }
+    //   mydata->pos[X] = -60.0;
+    //   mydata->pos[Y] = 0.0;
+    // }
     // mydata->pos[X] = (kilo_uid - 1) * 60.0;
     // mydata->pos[Y] = 0.0;
     mydata->food_pos[X] = 0.0;
@@ -490,7 +490,7 @@ void move_stop()
 void random_walk()
 {
   mydata->random_walk_time++;
-  srand(kilo_ticks + kilo_uid + 2);
+  srand(kilo_ticks + kilo_uid + 5);
   if (kilo_ticks % 50 == 0)
   {                                             // 50kilo_ticksは同じ行動を取り続ける
     mydata->random_walk_move_type = rand() % 3; // {LEFT, RIGHT, STRAIGHT}のどれかを選択
@@ -733,8 +733,12 @@ void explore()
       calculate_msg_food_info();
       set_color(colorNum[7]); // orage
     }
-    mydata->pos[X] = 0.0;
-    mydata->pos[Y] = 0.0;
+    if (mydata->homing_flag == TRUE)
+    {
+
+      mydata->pos[X] = -70.0 * cos(calculate_nest_angle() * (M_PI / 180.0));
+      mydata->pos[Y] = -70.0 * sin(calculate_nest_angle() * (M_PI / 180.0));
+    }
     get_out_edge_follow();
     mydata->homing_flag = FALSE;
     mydata->random_walk_time = 0;
@@ -835,9 +839,9 @@ void bhv_explorer()
 
   if (find_Explorer_by_ID() == TRUE)
   {
-    move_stop();
-    // get_out_edge_follow();
-  }
+    // move_stop();
+    get_out_edge_follow();
+   }
   else if (mydata->received_food_info == TRUE)
   {
     target_path_integration();
@@ -884,7 +888,11 @@ void loop()
   else if (get_bot_type() == EXPLORER || get_bot_type() == PIEXPLORER)
   {
     printf("(pos_x, pos_y) = (%f, %f), body_angle : %f, nest_angle : %f, food_angle : %f\n", mydata->pos[X], mydata->pos[Y], mydata->body_angle, calculate_nest_angle(), calculate_self_to_food_angle());
-    bhv_explorer();
+
+    if ((kilo_uid - 2) * 1000 < kilo_ticks)
+    {
+      bhv_explorer();
+    }
   }
   setup_message();
 }
@@ -928,7 +936,7 @@ char *botinfo(void)
 {
   int n;
   char *p = botinfo_buffer;
-  n = sprintf(p, "ID: %d, dist: %d, pos : (%f, %f), body_angle  : %f, food_angle : %f\nfood_msg_angle : %d, food_msg_dist : %d, food_pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(),mydata->pos[X], mydata->pos[Y], mydata->body_angle, calculate_self_to_food_angle(), mydata->food_msg_angle, mydata->food_msg_dist, mydata->food_pos[X], mydata->food_pos[Y]);
+  n = sprintf(p, "ID: %d, dist: %d, pos : (%f, %f), body_angle  : %f, food_angle : %f\nfood_msg_angle : %d, food_msg_dist : %d, food_pos : (%f, %f)\n", kilo_uid, find_nearest_N_dist(), mydata->pos[X], mydata->pos[Y], mydata->body_angle, calculate_self_to_food_angle(), mydata->food_msg_angle, mydata->food_msg_dist, mydata->food_pos[X], mydata->food_pos[Y]);
 
   p += n;
 
