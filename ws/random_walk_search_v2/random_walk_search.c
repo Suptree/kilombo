@@ -490,7 +490,7 @@ void move_stop()
 void random_walk()
 {
   mydata->random_walk_time++;
-  srand(kilo_ticks + kilo_uid + 5);
+  srand(kilo_ticks + kilo_uid + 8);
   if (kilo_ticks % 50 == 0)
   {                                             // 50kilo_ticksは同じ行動を取り続ける
     mydata->random_walk_move_type = rand() % 3; // {LEFT, RIGHT, STRAIGHT}のどれかを選択
