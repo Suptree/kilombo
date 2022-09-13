@@ -202,6 +202,32 @@ void setup()
     set_color(colorNum[1]);
     set_bot_type(EXPLORER);
     mydata->body_angle = 90.0;
+    
+    // D = {150, 220, 290}
+    for (int i = 0; i < 3; i++)
+    {
+      for (int j = 0; j < 3; j++)
+      {
+        if (kilo_uid == (i + 1) + 1 + (j * 3))
+        {
+          mydata->pos[X] = -120.0 + (double)i * 120.0;
+          mydata->pos[Y] = -120.0 + (double)j * 120.0;
+        }
+      }
+    }
+
+    // D = {360, 430, 500}
+    // for (int i = 0; i < 4; i++)
+    // {
+    //   for (int j = 0; j < 4; j++)
+    //   {
+    //     if (kilo_uid == (i + 1) + 1 + (j * 4))
+    //     {
+    //       mydata->pos[X] = -180.0 + (double)i * 120.0;
+    //       mydata->pos[Y] = -180.0 + (double)j * 120.0;
+    //     }
+    //   }
+    // }
 
     // /* d_700 */
     // for (int i = 0; i < 5; i++)
@@ -217,17 +243,17 @@ void setup()
     // }
 
     // /* d_500 */
-    for (int i = 0; i < 3; i++)
-    {
-      for (int j = 0; j < 4; j++)
-      {
-        if (kilo_uid == (i + 1) + 1 + (j * 3))
-        {
-          mydata->pos[X] = -120.0 + (double)i * 120.0;
-          mydata->pos[Y] = -120.0 + (double)j * 120.0;
-        }
-      }
-    }
+    // for (int i = 0; i < 3; i++)
+    // {
+    //   for (int j = 0; j < 4; j++)
+    //   {
+    //     if (kilo_uid == (i + 1) + 1 + (j * 3))
+    //     {
+    //       mydata->pos[X] = -120.0 + (double)i * 120.0;
+    //       mydata->pos[Y] = -120.0 + (double)j * 120.0;
+    //     }
+    //   }
+    // }
 
     // /* d_150 */
     // if (kilo_uid == 2)
@@ -490,7 +516,7 @@ void move_stop()
 void random_walk()
 {
   mydata->random_walk_time++;
-  srand(kilo_ticks + kilo_uid + 8);
+  srand(kilo_ticks + kilo_uid );
   if (kilo_ticks % 50 == 0)
   {                                             // 50kilo_ticksは同じ行動を取り続ける
     mydata->random_walk_move_type = rand() % 3; // {LEFT, RIGHT, STRAIGHT}のどれかを選択
