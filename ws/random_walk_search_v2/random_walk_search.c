@@ -709,7 +709,9 @@ void set_msg_food_info()
 
 void path_integration()
 {
-  set_color(colorNum[4]); // purple
+  // set_color(colorNum[4]); // purple
+
+  set_color(colorNum[10]); // 学会用
   if (fabs(calculate_nest_angle() - mydata->body_angle) < 0.5)
   {
     set_bot_type(PIEXPLORER);
@@ -870,6 +872,7 @@ void bhv_explorer()
    }
   else if (mydata->received_food_info == TRUE)
   {
+  set_color(colorNum[4]); // purple
     target_path_integration();
   }
   else if (mydata->detect_food == TRUE)
@@ -891,19 +894,19 @@ void loop()
     get_food_info();
     if (mydata->received_food_info == TRUE)
     {
-      set_color(colorNum[10]); // bright green
+      // set_color(colorNum[10]); // bright green
     }
   }
   else if (get_bot_type() == NODENEST || get_bot_type() == NODEFOOD)
   {
     if (get_bot_type() == NODENEST)
     {
-      set_color(colorNum[2]); // green
+      // set_color(colorNum[2]); // green
     }
     else
     {
 
-      set_color(colorNum[3]); // bright green
+      // set_color(colorNum[3]); // bright green
     }
     set_motors(0, 0);
     set_move_type(STOP);
